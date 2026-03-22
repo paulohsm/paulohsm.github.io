@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Resistor Calc | Paulo HSM</title>
+    <title>Calculadora de Resistores | Paulo HSM</title>
     <style>
         :root {
             --bg: #121212;
             --card: #1e1e1e;
             --text: #e0e0e0;
             --accent: #0366d6;
+            --resistor-tan: #d1b48c;
         }
 
         body {
@@ -20,204 +21,230 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overflow: hidden;
         }
 
-        /* 1. Representação do Resistor */
-        .resistor-display {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Área Visual do Resistor */
+        .display-section {
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
         }
 
-        .resistor-body {
-            width: 200px;
-            height: 40px;
-            background: #d1b48c;
-            border-radius: 10px;
+        .resistor-svg {
+            width: 240px;
+            height: 60px;
+            background: var(--resistor-tan);
+            border-radius: 15px;
             position: relative;
             display: flex;
             justify-content: space-around;
-            align-items: center;
+            padding: 0 10px;
             border: 2px solid #a88d66;
+            margin-bottom: 15px;
         }
 
-        .band {
-            width: 12px;
+        .band-view {
+            width: 15px;
             height: 100%;
-            transition: background 0.3s;
+            transition: background 0.2s;
         }
 
-        /* 2. Valores de Resistência */
-        .results {
+        /* Valores numéricos */
+        .results-panel {
             text-align: center;
-            padding: 10px;
+            padding: 15px;
             background: var(--card);
-            border-top: 1px solid #333;
+            border-bottom: 2px solid #333;
         }
 
-        .main-value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #fff;
-        }
+        .val-box { margin: 5px 0; }
+        .label { font-size: 0.8rem; color: #888; text-transform: uppercase; }
+        .main-val { font-size: 1.6rem; font-weight: bold; color: #fff; }
+        .limit-val { font-size: 1.1rem; color: #4caf50; }
+        .limit-val.low { color: #f44336; }
 
-        .tolerance-values {
-            font-size: 0.9rem;
-            color: #aaa;
-            margin-top: 5px;
-        }
-
-        /* 3. Tabela de Cores (Seletor) */
-        .color-selector {
+        /* Colunas de Seleção */
+        .selector-container {
+            flex: 1;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
-            padding: 10px;
-            background: var(--bg);
-            overflow-y: auto;
+            grid-template-columns: repeat(4, 1fr); /* Padrão 4 faixas */
+            overflow: hidden;
         }
 
-        .color-cell {
-            height: 45px;
-            border-radius: 5px;
+        .mode-5 .selector-container {
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .color-column {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.7rem;
-            cursor: pointer;
-            border: 1px solid #333;
-            font-weight: bold;
+            overflow-y: auto;
+            border-right: 1px solid #333;
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* 4. Abas na Base */
-        .tabs {
+        .color-option {
+            min-height: 50px;
             display: flex;
-            background: var(--primary);
-            border-top: 2px solid var(--accent);
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 1px solid #222;
         }
 
-        .tab {
-            flex: 1;
-            padding: 15px;
-            text-align: center;
+        .color-option.selected {
+            border: 2px solid #fff;
+            z-index: 10;
+        }
+
+        /* Abas */
+        .nav-tabs {
+            display: flex;
+            height: 60px;
             background: #1e1e1e;
+        }
+
+        .tab-btn {
+            flex: 1;
+            border: none;
+            background: none;
             color: #888;
             font-weight: bold;
+            font-size: 1rem;
         }
 
-        .tab.active {
-            background: var(--accent);
-            color: #fff;
+        .tab-btn.active {
+            color: var(--accent);
+            border-top: 3px solid var(--accent);
+            background: #252525;
         }
 
         /* Cores dos resistores */
-        .c-0 { background: #000; color: #fff; } .c-1 { background: #8B4513; color: #fff; }
-        .c-2 { background: #ff0000; color: #fff; } .c-3 { background: #ffa500; color: #000; }
-        .c-4 { background: #ffff00; color: #000; } .c-5 { background: #008000; color: #fff; }
-        .c-6 { background: #0000ff; color: #fff; } .c-7 { background: #800080; color: #fff; }
-        .c-8 { background: #808080; color: #fff; } .c-9 { background: #ffffff; color: #000; }
-        .c-10 { background: #ffd700; color: #000; } .c-11 { background: #c0c0c0; color: #000; }
+        .c0 { background: #000; color: #fff; } .c1 { background: #8B4513; color: #fff; }
+        .c2 { background: #ff0000; color: #fff; } .c3 { background: #ffa500; color: #000; }
+        .c4 { background: #ffff00; color: #000; } .c5 { background: #008000; color: #fff; }
+        .c6 { background: #0000ff; color: #fff; } .c7 { background: #800080; color: #fff; }
+        .c8 { background: #808080; color: #fff; } .c9 { background: #ffffff; color: #000; }
+        .c10 { background: #ffd700; color: #000; } .c11 { background: #c0c0c0; color: #000; }
     </style>
 </head>
-<body>
+<body class="mode-4">
 
-    <div class="resistor-display">
-        <div class="resistor-body">
-            <div id="b0" class="band c-1"></div>
-            <div id="b1" class="band c-0"></div>
-            <div id="b2" class="band c-2"></div>
-            <div id="b3" class="band c-10"></div>
+    <div class="display-section">
+        <div class="resistor-svg" id="resistor-body">
+            </div>
+    </div>
+
+    <div class="results-panel">
+        <div class="val-box">
+            <div class="label">Mínimo</div>
+            <div id="v-min" class="limit-val low">---</div>
+        </div>
+        <div class="val-box">
+            <div class="label">Valor Nominal</div>
+            <div id="v-main" class="main-val">---</div>
+        </div>
+        <div class="val-box">
+            <div class="label">Máximo</div>
+            <div id="v-max" class="limit-val">---</div>
         </div>
     </div>
 
-    <div class="results">
-        <div class="main-value" id="res-val">1.0 kΩ ±5%</div>
-        <div class="tolerance-values" id="tol-range">Min: 950 Ω | Max: 1.05 kΩ</div>
-    </div>
-
-    <div class="color-selector" id="grid-cores">
+    <div class="selector-container" id="picker">
         </div>
 
-    <div class="tabs">
-        <div class="tab active" onclick="setMode(4)">4 Faixas</div>
-        <div class="tab" onclick="setMode(5)">5 Faixas</div>
-    </div>
+    <nav class="nav-tabs">
+        <button class="tab-btn active" onclick="changeMode(4)">4 FAIXAS</button>
+        <button class="tab-btn" onclick="changeMode(5)">5 FAIXAS</button>
+    </nav>
 
     <script>
-        const colors = [
+        const colorData = [
             {n: "Preto", v: 0, m: 1, t: null}, {n: "Marrom", v: 1, m: 10, t: 1},
-            {n: "Vermelho", v: 2, m: 100, t: 2}, {n: "Laranja", v: 3, m: 1000, t: null},
-            {n: "Amarelo", v: 4, m: 10000, t: null}, {n: "Verde", v: 5, m: 100000, t: 0.5},
-            {n: "Azul", v: 6, m: 1000000, t: 0.25}, {n: "Violeta", v: 7, m: 10000000, t: 0.1},
-            {n: "Cinza", v: 8, m: null, t: 0.05}, {n: "Branco", v: 9, m: null, t: null},
-            {n: "Ouro", v: null, m: 0.1, t: 5}, {n: "Prata", v: null, m: 0.01, t: 10}
+            {n: "VM", v: 2, m: 100, t: 2}, {n: "LR", v: 3, m: 1000, t: null},
+            {n: "AM", v: 4, m: 10000, t: null}, {n: "VD", v: 5, m: 100000, t: 0.5},
+            {n: "AZ", v: 6, m: 1000000, t: 0.25}, {n: "VT", v: 7, m: 10000000, t: 0.1},
+            {n: "CZ", v: 8, m: null, t: 0.05}, {n: "BR", v: 9, m: null, t: null},
+            {n: "OU", v: null, m: 0.1, t: 5}, {n: "PR", v: null, m: 0.01, t: 10}
         ];
 
-        let mode = 4;
-        let selectedBands = [1, 0, 2, 10]; // Índices das cores
-        let currentBandIndex = 0; // Qual faixa estamos editando ao tocar na tabela
+        let currentMode = 4;
+        let selections = [1, 0, 2, 10, 1]; // Índices iniciais
 
-        function initGrid() {
-            const grid = document.getElementById('grid-cores');
-            grid.innerHTML = '';
-            colors.forEach((c, i) => {
-                const cell = document.createElement('div');
-                cell.className = `color-cell c-${i}`;
-                cell.innerHTML = `<span>${c.n}</span>`;
-                cell.onclick = () => selectColor(i);
-                grid.appendChild(cell);
-            });
+        function changeMode(m) {
+            currentMode = m;
+            document.body.className = `mode-${m}`;
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i+4) === m));
+            render();
         }
 
-        function selectColor(colorIdx) {
-            selectedBands[currentBandIndex] = colorIdx;
-            // Atualiza cor na imagem
-            document.getElementById(`b${currentBandIndex}`).className = `band c-${colorIdx}`;
-            
-            // Lógica simples de carrossel para as faixas
-            currentBandIndex = (currentBandIndex + 1) % mode;
+        function render() {
+            const picker = document.getElementById('picker');
+            const body = document.getElementById('resistor-body');
+            picker.innerHTML = '';
+            body.innerHTML = '';
+
+            for (let i = 0; i < currentMode; i++) {
+                // Criar faixas no resistor visual
+                const bandDiv = document.createElement('div');
+                bandDiv.className = `band-view c${selections[i]}`;
+                body.appendChild(bandDiv);
+
+                // Criar colunas de seleção
+                const col = document.createElement('div');
+                col.className = 'color-column';
+                
+                colorData.forEach((color, cIdx) => {
+                    // Validar se a cor faz sentido para a coluna (ex: Ouro não é 1ª faixa)
+                    if (i < (currentMode - 2) && color.v === null) return;
+                    if (i === (currentMode - 2) && color.m === null) return;
+                    if (i === (currentMode - 1) && color.t === null) return;
+
+                    const opt = document.createElement('div');
+                    opt.className = `color-option c${cIdx} ${selections[i] === cIdx ? 'selected' : ''}`;
+                    opt.innerText = color.n;
+                    opt.onclick = () => {
+                        selections[i] = cIdx;
+                        render();
+                    };
+                    col.appendChild(opt);
+                });
+                picker.appendChild(col);
+            }
             calculate();
         }
 
         function calculate() {
             let val = 0;
-            let mult = colors[selectedBands[mode-2]].m;
-            let tol = colors[selectedBands[mode-1]].t || 20;
+            const mult = colorData[selections[currentMode - 2]].m;
+            const tol = colorData[selections[currentMode - 1]].t;
 
-            if(mode === 4) {
-                val = (colors[selectedBands[0]].v * 10) + colors[selectedBands[1]].v;
+            if (currentMode === 4) {
+                val = (colorData[selections[0]].v * 10) + colorData[selections[1]].v;
             } else {
-                val = (colors[selectedBands[0]].v * 100) + (colors[selectedBands[1]].v * 10) + colors[selectedBands[2]].v;
+                val = (colorData[selections[0]].v * 100) + (colorData[selections[1]].v * 10) + colorData[selections[2]].v;
             }
 
-            const finalR = val * mult;
-            const min = finalR * (1 - tol/100);
-            const max = finalR * (1 + tol/100);
+            const nominal = val * mult;
+            const min = nominal * (1 - tol/100);
+            const max = nominal * (1 + tol/100);
 
-            document.getElementById('res-val').innerText = `${formatR(finalR)}Ω ±${tol}%`;
-            document.getElementById('tol-range').innerText = `Min: ${formatR(min)}Ω | Max: ${formatR(max)}Ω`;
+            document.getElementById('v-main').innerText = format(nominal) + " Ω";
+            document.getElementById('v-min').innerText = format(min) + " Ω";
+            document.getElementById('v-max').innerText = format(max) + " Ω";
         }
 
-        function formatR(num) {
-            if(num >= 1000000) return (num/1000000).toFixed(2) + ' M';
-            if(num >= 1000) return (num/1000).toFixed(2) + ' k';
-            return num.toFixed(1);
+        function format(n) {
+            if (n >= 1e6) return (n/1e6).toFixed(2) + " M";
+            if (n >= 1e3) return (n/1e3).toFixed(2) + " k";
+            return n.toFixed(1);
         }
 
-        function setMode(m) {
-            mode = m;
-            currentBandIndex = 0;
-            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active'));
-            // Ajustar visual das faixas se necessário (escondido/mostrado)
-            calculate();
-        }
-
-        initGrid();
-        calculate();
+        render();
     </script>
 </body>
 </html>
