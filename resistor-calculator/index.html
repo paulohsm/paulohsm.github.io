@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Resistor Pro | Paulo HSM</title>
+    <title>Resistor Pro | IEC 60062</title>
     <style>
         :root {
             --bg: #0a0a0a;
@@ -24,126 +24,81 @@
             overflow: hidden;
         }
 
-        /* 1. Resistor com Terminais */
+        /* Área do Resistor */
         .display-section {
-            padding: 25px 10px;
+            padding: 25px 0;
             display: flex;
             justify-content: center;
             background: #111;
-        }
-
-        .terminal-wire {
-            width: 50px;
-            height: 5px;
-            background: linear-gradient(to bottom, #999, #666);
-            align-self: center;
-        }
-
-        .resistor-body {
-            width: 180px;
-            height: 45px;
-            background: var(--resistor-tan);
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-around;
-            padding: 0 15px;
-            border: 2px solid #a88d66;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
-        }
-
-        .band-view { width: 12px; height: 100%; }
-
-        /* 2. Valores em Linha Única */
-        .results-panel {
-            background: var(--card);
-            padding: 12px 5px;
             border-bottom: 1px solid #222;
         }
 
+        .terminal { width: 40px; height: 4px; background: #888; align-self: center; }
+        .resistor-body {
+            width: 180px; height: 46px; background: var(--resistor-tan);
+            border-radius: 10px; display: flex; justify-content: space-around;
+            padding: 0 10px; border: 2px solid #a88d66; box-shadow: inset 0 0 8px rgba(0,0,0,0.2);
+        }
+        .band-view { width: 10px; height: 100%; border-radius: 2px; }
+
+        /* Painel de Resultados */
+        .results-panel { background: var(--card); padding: 12px 5px; }
         .results-grid {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr auto 1fr;
-            align-items: center;
-            max-width: 600px;
-            margin: 0 auto;
+            display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
+            align-items: center; max-width: 450px; margin: 0 auto;
         }
+        .val-unit { font-size: 1.15rem; font-weight: 700; text-align: center; color: #fff; }
+        .val-label { font-size: 0.65rem; color: #666; text-align: center; text-transform: uppercase; margin-top: 2px; }
+        .divider { color: #333; font-size: 1.2rem; }
+        #v-min { color: #ef5350; } #v-max { color: #66bb6a; }
 
-        .divider { color: #333; font-size: 1.5rem; font-weight: 200; }
-        .val-unit { font-size: 1.2rem; font-weight: bold; text-align: center; letter-spacing: -0.5px; }
-        .val-label { font-size: 0.65rem; color: #666; text-align: center; text-transform: uppercase; margin-top: 4px; }
-        
-        #v-main { color: #fff; }
-        #v-min { color: #ff5252; }
-        #v-max { color: #4caf50; }
-
-        /* 3. Colunas de Seleção Simétricas */
+        /* Seletor em Colunas Fixas */
         .selector-container {
-            flex: 1;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            background: #000;
+            flex: 1; display: grid; background: #000;
         }
-
+        .mode-4 .selector-container { grid-template-columns: repeat(4, 1fr); }
         .mode-5 .selector-container { grid-template-columns: repeat(5, 1fr); }
 
-        .color-column {
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #1a1a1a;
-        }
-
+        .color-column { display: flex; flex-direction: column; border-right: 1px solid #111; }
         .color-option {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.1s;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; font-weight: bold; cursor: pointer; position: relative;
         }
-
-        .color-option.spacer {
-            pointer-events: none;
-            background: #000;
-            border: none;
+        .color-option.disabled {
+            background: #050505 !important; color: #222 !important; pointer-events: none;
         }
+        .color-option.selected { outline: 3px solid #fff; outline-offset: -3px; z-index: 5; }
 
-        .color-option.selected {
-            box-shadow: inset 0 0 0 3px #fff;
-            z-index: 5;
-        }
+        /* Cores Fixas (Sequência IEC) */
+        .c0 { background: #000; color: #fff; } .c1 { background: #8B4513; color: #fff; }
+        .c2 { background: #ff0000; color: #fff; } .c3 { background: #ffa500; color: #000; }
+        .c4 { background: #ffff00; color: #000; } .c5 { background: #008000; color: #fff; }
+        .c6 { background: #0000ff; color: #fff; } .c7 { background: #800080; color: #fff; }
+        .c8 { background: #808080; color: #fff; } .c9 { background: #ffffff; color: #000; }
+        .c10 { background: #ffd700; color: #000; } .c11 { background: #c0c0c0; color: #000; }
+        .c12 { background: #ff69b4; color: #000; } /* Rosa */
 
-        /* Nav Tabs */
+        /* Abas */
         .nav-tabs { display: flex; height: 50px; background: #151515; }
         .tab-btn { flex: 1; border: none; background: none; color: #555; font-weight: bold; font-size: 0.9rem; }
         .tab-btn.active { color: var(--accent); background: #1a1a1a; border-top: 3px solid var(--accent); }
-
-        /* Cores Base */
-        .c0 { background: #000; color: #fff; } .c1 { background: #5d3a1a; color: #fff; }
-        .c2 { background: #d32f2f; color: #fff; } .c3 { background: #ef6c00; color: #000; }
-        .c4 { background: #fbc02d; color: #000; } .c5 { background: #388e3c; color: #fff; }
-        .c6 { background: #1976d2; color: #fff; } .c7 { background: #7b1fa2; color: #fff; }
-        .c8 { background: #616161; color: #fff; } .c9 { background: #eceff1; color: #000; }
-        .c10 { background: #ffd700; color: #000; } .c11 { background: #b0bec5; color: #000; }
     </style>
 </head>
 <body class="mode-4">
 
     <div class="display-section">
-        <div class="terminal-wire"></div>
+        <div class="terminal"></div>
         <div class="resistor-body" id="resistor-body"></div>
-        <div class="terminal-wire"></div>
+        <div class="terminal"></div>
     </div>
 
     <div class="results-panel">
         <div class="results-grid">
-            <div><div id="v-min" class="val-unit">---</div><div class="val-label">Mínimo</div></div>
+            <div><div id="v-min" class="val-unit">-</div><div class="val-label">Mínimo</div></div>
             <div class="divider">|</div>
-            <div><div id="v-main" class="val-unit">---</div><div class="val-label">Nominal</div></div>
+            <div><div id="v-main" class="val-unit">-</div><div class="val-label">Nominal</div></div>
             <div class="divider">|</div>
-            <div><div id="v-max" class="val-unit">---</div><div class="val-label">Máximo</div></div>
+            <div><div id="v-max" class="val-unit">-</div><div class="val-label">Máximo</div></div>
         </div>
     </div>
 
@@ -155,20 +110,27 @@
     </nav>
 
     <script>
-        const colorData = [
-            {v: "0", m: "1", t: null}, {v: "1", m: "10", t: "1%"},
-            {v: "2", m: "100", t: "2%"}, {v: "3", m: "1k", t: null},
-            {v: "4", m: "10k", t: null}, {v: "5", m: "100k", t: "0.5%"},
-            {v: "6", m: "1M", t: "0.25%"}, {v: "7", m: "10M", t: "0.1%"},
-            {v: "8", m: null, t: "0.05%"}, {v: "9", m: null, t: null},
-            {v: "x0.1", m: "0.1", t: "5%"}, {v: "x0.01", m: "0.01", t: "10%"}
+        const colorNames = ["Preto","Marrom","Vermelho","Laranja","Amarelo","Verde","Azul","Violeta","Cinza","Branco","Dourado","Prata","Rosa"];
+        
+        // Dados técnicos conforme sequência solicitada
+        const mathData = [
+            {v: 0, m: 1, t: null},       // Preto
+            {v: 1, m: 10, t: 1},        // Marrom
+            {v: 2, m: 100, t: 2},       // Vermelho
+            {v: 3, m: 1000, t: null},    // Laranja
+            {v: 4, m: 10000, t: null},   // Amarelo
+            {v: 5, m: 100000, t: 0.5},   // Verde
+            {v: 6, m: 1000000, t: 0.25}, // Azul
+            {v: 7, m: 10000000, t: 0.1}, // Violeta
+            {v: 8, m: null, t: 0.05},    // Cinza
+            {v: 9, m: null, t: null},    // Branco
+            {v: null, m: 0.1, t: 5},     // Dourado
+            {v: null, m: 0.01, t: 10},   // Prata
+            {v: null, m: null, t: null}  // Rosa (Reservado)
         ];
 
-        const mathData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0.1, 0.01];
-        const tolData = [null, 1, 2, null, null, 0.5, 0.25, 0.1, 0.05, null, 5, 10];
-
         let currentMode = 4;
-        let selections = [1, 0, 2, 10, 1];
+        let selections = [1, 0, 2, 10, 1]; 
 
         function changeMode(m) {
             currentMode = m;
@@ -180,11 +142,7 @@
         function render() {
             const picker = document.getElementById('picker');
             const body = document.getElementById('resistor-body');
-            picker.innerHTML = '';
-            body.innerHTML = '';
-
-            // Definir número máximo de células para equalizar altura
-            const maxCells = 12; 
+            picker.innerHTML = ''; body.innerHTML = '';
 
             for (let i = 0; i < currentMode; i++) {
                 const bandDiv = document.createElement('div');
@@ -194,61 +152,70 @@
                 const col = document.createElement('div');
                 col.className = 'color-column';
                 
-                // Adicionar Espaçador no topo da coluna de tolerância se necessário
-                if (i === currentMode - 1) {
-                    const spacer = document.createElement('div');
-                    spacer.className = 'color-option spacer';
-                    col.appendChild(spacer);
-                }
-
-                colorData.forEach((color, cIdx) => {
+                mathData.forEach((data, cIdx) => {
+                    const opt = document.createElement('div');
                     const isDigit = i < (currentMode - 2);
                     const isMult = i === (currentMode - 2);
                     const isTol = i === (currentMode - 1);
 
-                    // Filtros lógicos
-                    if (isDigit && cIdx >= 10) return; 
-                    if (isMult && color.m === null) return;
-                    if (isTol && color.t === null) return;
+                    let content = "-";
+                    let disabled = false;
 
-                    const opt = document.createElement('div');
-                    opt.className = `color-option c${cIdx} ${selections[i] === cIdx ? 'selected' : ''}`;
+                    // Lógica de Desativação
+                    if (isDigit) {
+                        if (cIdx === 0 && i === 0) disabled = true; // Preto na 1ª faixa
+                        if (cIdx >= 10) disabled = true; // Dourado/Prata/Rosa
+                        content = disabled ? "-" : data.v;
+                    } 
+                    else if (isMult) {
+                        if (data.m === null) disabled = true;
+                        content = disabled ? "-" : "×" + formatMult(data.m);
+                    }
+                    else if (isTol) {
+                        if (data.t === null) disabled = true;
+                        content = disabled ? "-" : "±" + data.t + "%";
+                    }
+
+                    opt.className = `color-option c${cIdx} ${selections[i] === cIdx ? 'selected' : ''} ${disabled ? 'disabled' : ''}`;
+                    opt.innerText = content;
                     
-                    if (isDigit) opt.innerText = color.v;
-                    if (isMult) opt.innerText = color.m;
-                    if (isTol) opt.innerText = color.t;
-
-                    opt.onclick = () => { selections[i] = cIdx; render(); };
+                    if (!disabled) {
+                        opt.onclick = () => { selections[i] = cIdx; render(); };
+                    }
                     col.appendChild(opt);
                 });
-
-                // Preencher o fundo da coluna se sobrar espaço (para manter flex: 1 consistente)
                 picker.appendChild(col);
             }
             calculate();
         }
 
+        function formatMult(m) {
+            if (m >= 1e6) return (m/1e6) + "M";
+            if (m >= 1e3) return (m/1e3) + "k";
+            return m;
+        }
+
         function calculate() {
             let val = 0;
-            const mult = mathData[selections[currentMode - 2]];
-            const tol = tolData[selections[currentMode - 1]] || 20;
+            const mult = mathData[selections[currentMode - 2]].m;
+            const tol = mathData[selections[currentMode - 1]].t || 20;
 
             if (currentMode === 4) {
-                val = (mathData[selections[0]] * 10) + mathData[selections[1]];
+                val = (mathData[selections[0]].v * 10) + mathData[selections[1]].v;
             } else {
-                val = (mathData[selections[0]] * 100) + (mathData[selections[1]] * 10) + mathData[selections[2]];
+                val = (mathData[selections[0]].v * 100) + (mathData[selections[1]].v * 10) + mathData[selections[2]].v;
             }
 
             const nominal = val * mult;
             const min = nominal * (1 - tol/100);
             const max = nominal * (1 + tol/100);
 
-            document.getElementById('v-main').innerText = format(nominal);
-            document.getElementById('v-min').innerText = format(min);
-            document.getElementById('v-max').innerText = format(max);
+            document.getElementById('v-main').innerText = formatValue(nominal) + " Ω";
+            document.getElementById('v-min').innerText = formatValue(min) + " Ω";
+            document.getElementById('v-max').innerText = formatValue(max) + " Ω";
         }
 
-        function format(n) {
+        function formatValue(n) {
             if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
             if (n >= 1e3) return (n/1e3).toFixed(2) + "k";
             if (n < 1) return n.toFixed(3);
