@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Calculadora de Resistores | Paulo HSM</title>
+    <title>Resistor Pro | Paulo HSM</title>
     <style>
         :root {
-            --bg: #121212;
-            --card: #1e1e1e;
+            --bg: #0f0f0f;
+            --card: #1a1a1a;
             --text: #e0e0e0;
             --accent: #0366d6;
             --resistor-tan: #d1b48c;
@@ -21,109 +21,106 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            overflow: hidden;
         }
 
-        /* Área Visual do Resistor */
+        /* 1. Resistor com Terminais */
         .display-section {
-            padding: 20px;
+            padding: 30px 10px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #1a1a1a;
+            justify-content: center;
+            background: #151515;
         }
 
-        .resistor-svg {
-            width: 240px;
-            height: 60px;
+        .terminal-wire {
+            width: 40px;
+            height: 4px;
+            background: #aaa;
+            align-self: center;
+        }
+
+        .resistor-body {
+            width: 200px;
+            height: 50px;
             background: var(--resistor-tan);
-            border-radius: 15px;
-            position: relative;
+            border-radius: 12px;
             display: flex;
             justify-content: space-around;
             padding: 0 10px;
             border: 2px solid #a88d66;
-            margin-bottom: 15px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
         }
 
         .band-view {
-            width: 15px;
+            width: 12px;
             height: 100%;
-            transition: background 0.2s;
         }
 
-        /* Valores numéricos */
+        /* 2. Valores em Linha Única */
         .results-panel {
-            text-align: center;
-            padding: 15px;
             background: var(--card);
-            border-bottom: 2px solid #333;
+            padding: 15px 5px;
+            border-bottom: 1px solid #333;
         }
 
-        .val-box { margin: 5px 0; }
-        .label { font-size: 0.8rem; color: #888; text-transform: uppercase; }
-        .main-val { font-size: 1.6rem; font-weight: bold; color: #fff; }
-        .limit-val { font-size: 1.1rem; color: #4caf50; }
-        .limit-val.low { color: #f44336; }
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto 1fr;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
 
-        /* Colunas de Seleção */
+        .divider { color: #444; font-weight: bold; }
+
+        .val-unit { font-size: 1.1rem; font-weight: bold; text-align: center; }
+        .val-label { font-size: 0.7rem; color: #777; text-align: center; text-transform: uppercase; margin-top: 4px; }
+        
+        #v-main { color: #fff; font-size: 1.3rem; }
+        #v-min { color: #f44336; }
+        #v-max { color: #4caf50; }
+
+        /* 3. Colunas com Ajuste Automático */
         .selector-container {
             flex: 1;
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* Padrão 4 faixas */
-            overflow: hidden;
+            grid-template-columns: repeat(4, 1fr);
+            background: #000;
         }
 
-        .mode-5 .selector-container {
-            grid-template-columns: repeat(5, 1fr);
-        }
+        .mode-5 .selector-container { grid-template-columns: repeat(5, 1fr); }
 
         .color-column {
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
-            border-right: 1px solid #333;
-            -webkit-overflow-scrolling: touch;
+            border-right: 1px solid #222;
         }
 
         .color-option {
-            min-height: 50px;
+            flex: 1; /* Ajuste automático de altura */
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
+            font-size: 0.9rem;
             font-weight: bold;
             cursor: pointer;
-            border-bottom: 1px solid #222;
+            transition: opacity 0.2s;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
 
         .color-option.selected {
-            border: 2px solid #fff;
-            z-index: 10;
+            outline: 3px solid #fff;
+            outline-offset: -3px;
+            z-index: 5;
         }
 
         /* Abas */
-        .nav-tabs {
-            display: flex;
-            height: 60px;
-            background: #1e1e1e;
-        }
+        .nav-tabs { display: flex; height: 55px; background: #1a1a1a; }
+        .tab-btn { flex: 1; border: none; background: none; color: #666; font-weight: bold; }
+        .tab-btn.active { color: var(--accent); background: #222; border-top: 3px solid var(--accent); }
 
-        .tab-btn {
-            flex: 1;
-            border: none;
-            background: none;
-            color: #888;
-            font-weight: bold;
-            font-size: 1rem;
-        }
-
-        .tab-btn.active {
-            color: var(--accent);
-            border-top: 3px solid var(--accent);
-            background: #252525;
-        }
-
-        /* Cores dos resistores */
+        /* Cores */
         .c0 { background: #000; color: #fff; } .c1 { background: #8B4513; color: #fff; }
         .c2 { background: #ff0000; color: #fff; } .c3 { background: #ffa500; color: #000; }
         .c4 { background: #ffff00; color: #000; } .c5 { background: #008000; color: #fff; }
@@ -135,27 +132,31 @@
 <body class="mode-4">
 
     <div class="display-section">
-        <div class="resistor-svg" id="resistor-body">
-            </div>
+        <div class="terminal-wire"></div>
+        <div class="resistor-body" id="resistor-body"></div>
+        <div class="terminal-wire"></div>
     </div>
 
     <div class="results-panel">
-        <div class="val-box">
-            <div class="label">Mínimo</div>
-            <div id="v-min" class="limit-val low">---</div>
-        </div>
-        <div class="val-box">
-            <div class="label">Valor Nominal</div>
-            <div id="v-main" class="main-val">---</div>
-        </div>
-        <div class="val-box">
-            <div class="label">Máximo</div>
-            <div id="v-max" class="limit-val">---</div>
+        <div class="results-grid">
+            <div>
+                <div id="v-min" class="val-unit">---</div>
+                <div class="val-label">Mínimo</div>
+            </div>
+            <div class="divider">/</div>
+            <div>
+                <div id="v-main" class="val-unit">---</div>
+                <div class="val-label">Nominal</div>
+            </div>
+            <div class="divider">/</div>
+            <div>
+                <div id="v-max" class="val-unit">---</div>
+                <div class="val-label">Máximo</div>
+            </div>
         </div>
     </div>
 
-    <div class="selector-container" id="picker">
-        </div>
+    <div class="selector-container" id="picker"></div>
 
     <nav class="nav-tabs">
         <button class="tab-btn active" onclick="changeMode(4)">4 FAIXAS</button>
@@ -164,16 +165,24 @@
 
     <script>
         const colorData = [
-            {n: "Preto", v: 0, m: 1, t: null}, {n: "Marrom", v: 1, m: 10, t: 1},
-            {n: "VM", v: 2, m: 100, t: 2}, {n: "LR", v: 3, m: 1000, t: null},
-            {n: "AM", v: 4, m: 10000, t: null}, {n: "VD", v: 5, m: 100000, t: 0.5},
-            {n: "AZ", v: 6, m: 1000000, t: 0.25}, {n: "VT", v: 7, m: 10000000, t: 0.1},
-            {n: "CZ", v: 8, m: null, t: 0.05}, {n: "BR", v: 9, m: null, t: null},
-            {n: "OU", v: null, m: 0.1, t: 5}, {n: "PR", v: null, m: 0.01, t: 10}
+            {v: "0", m: "1", t: null}, {v: "1", m: "10", t: "1%"},
+            {v: "2", m: "100", t: "2%"}, {v: "3", m: "1k", t: null},
+            {v: "4", m: "10k", t: null}, {v: "5", m: "100k", t: "0.5%"},
+            {v: "6", m: "1M", t: "0.25%"}, {v: "7", m: "10M", t: "0.1%"},
+            {v: "8", m: null, t: "0.05%"}, {v: "9", m: null, t: null},
+            {v: "x0.1", m: "0.1", t: "5%"}, {v: "x0.01", m: "0.01", t: "10%"}
+        ];
+
+        // Valores numéricos reais para o cálculo
+        const mathData = [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0.1, 0.01
+        ];
+        const tolData = [
+            null, 1, 2, null, null, 0.5, 0.25, 0.1, 0.05, null, 5, 10
         ];
 
         let currentMode = 4;
-        let selections = [1, 0, 2, 10, 1]; // Índices iniciais
+        let selections = [1, 0, 2, 10, 1];
 
         function changeMode(m) {
             currentMode = m;
@@ -189,24 +198,30 @@
             body.innerHTML = '';
 
             for (let i = 0; i < currentMode; i++) {
-                // Criar faixas no resistor visual
                 const bandDiv = document.createElement('div');
                 bandDiv.className = `band-view c${selections[i]}`;
                 body.appendChild(bandDiv);
 
-                // Criar colunas de seleção
                 const col = document.createElement('div');
                 col.className = 'color-column';
                 
                 colorData.forEach((color, cIdx) => {
-                    // Validar se a cor faz sentido para a coluna (ex: Ouro não é 1ª faixa)
-                    if (i < (currentMode - 2) && color.v === null) return;
-                    if (i === (currentMode - 2) && color.m === null) return;
-                    if (i === (currentMode - 1) && color.t === null) return;
+                    const isDigit = i < (currentMode - 2);
+                    const isMult = i === (currentMode - 2);
+                    const isTol = i === (currentMode - 1);
+
+                    if (isDigit && mathData[cIdx] < 0.2 && cIdx >= 10) return; 
+                    if (isMult && color.m === null) return;
+                    if (isTol && color.t === null) return;
 
                     const opt = document.createElement('div');
                     opt.className = `color-option c${cIdx} ${selections[i] === cIdx ? 'selected' : ''}`;
-                    opt.innerText = color.n;
+                    
+                    // Mostrar valor ao invés do nome
+                    if (isDigit) opt.innerText = color.v;
+                    if (isMult) opt.innerText = color.m;
+                    if (isTol) opt.innerText = color.t;
+
                     opt.onclick = () => {
                         selections[i] = cIdx;
                         render();
@@ -220,27 +235,28 @@
 
         function calculate() {
             let val = 0;
-            const mult = colorData[selections[currentMode - 2]].m;
-            const tol = colorData[selections[currentMode - 1]].t;
+            const mult = mathData[selections[currentMode - 2]];
+            const tol = tolData[selections[currentMode - 1]];
 
             if (currentMode === 4) {
-                val = (colorData[selections[0]].v * 10) + colorData[selections[1]].v;
+                val = (mathData[selections[0]] * 10) + mathData[selections[1]];
             } else {
-                val = (colorData[selections[0]].v * 100) + (colorData[selections[1]].v * 10) + colorData[selections[2]].v;
+                val = (mathData[selections[0]] * 100) + (mathData[selections[1]] * 10) + mathData[selections[2]];
             }
 
             const nominal = val * mult;
-            const min = nominal * (1 - tol/100);
-            const max = nominal * (1 + tol/100);
+            const min = nominal * (1 - (tol||20)/100);
+            const max = nominal * (1 + (tol||20)/100);
 
-            document.getElementById('v-main').innerText = format(nominal) + " Ω";
-            document.getElementById('v-min').innerText = format(min) + " Ω";
-            document.getElementById('v-max').innerText = format(max) + " Ω";
+            document.getElementById('v-main').innerText = format(nominal);
+            document.getElementById('v-min').innerText = format(min);
+            document.getElementById('v-max').innerText = format(max);
         }
 
         function format(n) {
-            if (n >= 1e6) return (n/1e6).toFixed(2) + " M";
-            if (n >= 1e3) return (n/1e3).toFixed(2) + " k";
+            if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
+            if (n >= 1e3) return (n/1e3).toFixed(2) + "k";
+            if (n < 1) return n.toFixed(2);
             return n.toFixed(1);
         }
 
