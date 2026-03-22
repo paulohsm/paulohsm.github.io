@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title id="page-title">Calculadora de Resistência / Resistor Calculator</title>
     <style>
         :root {
@@ -13,77 +13,111 @@
             --resistor-tan: #d1b48c;
         }
 
-        body {
-            font-family: -apple-system, sans-serif;
+        /* Reset para garantir consistência entre navegadores */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            height: 100%;
+            height: 100dvh; /* Altura dinâmica para mobile */
+            margin: 0;
+            padding: 0;
             background-color: var(--bg);
             color: var(--text);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
+            font-family: -apple-system, system-ui, sans-serif;
+            overflow: hidden; /* Impede a rolagem da página inteira */
         }
 
-        /* Topo: Visual do Resistor */
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 1. Área Superior (Resistor) - Tamanho fixo essencial */
         .display-section {
-            padding: 20px 0;
+            flex-shrink: 0;
+            padding: 15px 0;
             display: flex;
             justify-content: center;
             background: #111;
             border-bottom: 1px solid #222;
         }
 
-        .terminal { width: 45px; height: 5px; background: #777; align-self: center; border-radius: 2px; }
+        .terminal { width: 40px; height: 5px; background: #777; align-self: center; border-radius: 2px; }
         .resistor-body {
-            width: 190px; height: 50px; background: var(--resistor-tan);
-            border-radius: 12px; display: flex; justify-content: space-around;
-            padding: 0 10px; border: 2px solid #a88d66; box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+            width: 180px; height: 45px; background: var(--resistor-tan);
+            border-radius: 10px; display: flex; justify-content: space-around;
+            padding: 0 8px; border: 2px solid #a88d66;
         }
-        .band-view { width: 12px; height: 100%; border-radius: 1px; }
+        .band-view { width: 10px; height: 100%; }
 
-        /* Painel de Resultados */
-        .results-panel { background: var(--card); padding: 15px 5px; border-bottom: 1px solid #222; }
+        /* 2. Painel de Resultados */
+        .results-panel {
+            flex-shrink: 0;
+            background: var(--card);
+            padding: 10px 5px;
+            border-bottom: 1px solid #222;
+        }
         .results-grid {
             display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
-            align-items: center; max-width: 480px; margin: 0 auto;
+            align-items: center; max-width: 450px; margin: 0 auto;
         }
-        .val-unit { font-size: 1.2rem; font-weight: 700; text-align: center; color: #fff; }
-        .val-label { font-size: 0.7rem; color: #666; text-align: center; text-transform: uppercase; margin-top: 3px; }
-        .divider { color: #333; font-size: 1.3rem; }
+        .val-unit { font-size: 1.1rem; font-weight: 700; text-align: center; color: #fff; white-space: nowrap; }
+        .val-label { font-size: 0.6rem; color: #666; text-align: center; text-transform: uppercase; }
+        .divider { color: #333; font-size: 1.2rem; padding: 0 5px; }
         #v-min { color: #ef5350; } #v-max { color: #66bb6a; }
 
-        /* Seletor em Colunas Fixas */
-        .selector-container { flex: 1; display: grid; background: #000; }
+        /* 3. Seletor Central (Onde a mágica da rolagem acontece) */
+        .selector-container {
+            flex: 1; /* Ocupa todo o espaço restante */
+            display: grid;
+            min-height: 0; /* CRÍTICO: Permite que o container encolha e ative o scroll interno */
+            background: #000;
+        }
         .mode-4 .selector-container { grid-template-columns: repeat(4, 1fr); }
         .mode-5 .selector-container { grid-template-columns: repeat(5, 1fr); }
 
-        .color-column { display: flex; flex-direction: column; border-right: 1px solid #111; }
-        .color-option {
-            flex: 1; display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: 0.1s;
-            border: 1px solid rgba(255,255,255,0.05);
+        .color-column {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #111;
+            overflow-y: auto; /* Permite rolar apenas a coluna se necessário */
+            scrollbar-width: none; /* Esconde scrollbar no Firefox */
         }
-        
-        /* Célula Desativada: mantém a cor, mas muda o cursor e reduz opacidade do texto */
-        .color-option.disabled {
-            cursor: default;
-            color: rgba(255,255,255,0.3) !important;
-        }
-        
-        .color-option.selected { outline: 4px solid #fff; outline-offset: -4px; z-index: 5; }
+        .color-column::-webkit-scrollbar { display: none; } /* Esconde scrollbar no Chrome/Safari */
 
-        /* Cores Sequência Solicitada */
+        .color-option {
+            flex: 1; /* Tenta esticar as células */
+            min-height: 40px; /* Altura mínima para garantir clique no mobile */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .color-option.disabled { color: rgba(255,255,255,0.2) !important; cursor: default; }
+        .color-option.selected { outline: 3px solid #fff; outline-offset: -3px; z-index: 5; }
+
+        /* Cores */
         .c0 { background: #000; color: #fff; } .c1 { background: #8B4513; color: #fff; }
         .c2 { background: #ff0000; color: #fff; } .c3 { background: #ffa500; color: #000; }
         .c4 { background: #ffff00; color: #000; } .c5 { background: #008000; color: #fff; }
         .c6 { background: #0000ff; color: #fff; } .c7 { background: #800080; color: #fff; }
         .c8 { background: #808080; color: #fff; } .c9 { background: #ffffff; color: #000; }
         .c10 { background: #ffd700; color: #000; } .c11 { background: #c0c0c0; color: #000; }
-        .c12 { background: #ff69b4; color: #000; } /* Rosa */
+        .c12 { background: #ff69b4; color: #000; }
 
-        /* Abas Inferiores */
-        .nav-tabs { display: flex; height: 55px; background: #151515; }
-        .tab-btn { flex: 1; border: none; background: none; color: #555; font-weight: bold; font-size: 0.95rem; }
+        /* 4. Abas na Base */
+        .nav-tabs {
+            flex-shrink: 0; /* Impede que as abas sejam esmagadas */
+            display: flex;
+            height: 55px;
+            background: #151515;
+            border-top: 1px solid #333;
+            padding-bottom: env(safe-area-inset-bottom); /* Suporte para iPhones novos */
+        }
+        .tab-btn { flex: 1; border: none; background: none; color: #555; font-weight: bold; }
         .tab-btn.active { color: var(--accent); background: #1a1a1a; border-top: 3px solid var(--accent); }
     </style>
 </head>
@@ -119,19 +153,11 @@
         };
 
         const mathData = [
-            {v: 0, m: 1, t: null},       // 0 Preto
-            {v: 1, m: 10, t: 1},        // 1 Marrom
-            {v: 2, m: 100, t: 2},       // 2 Vermelho
-            {v: 3, m: 1000, t: null},    // 3 Laranja
-            {v: 4, m: 10000, t: null},   // 4 Amarelo
-            {v: 5, m: 100000, t: 0.5},   // 5 Verde
-            {v: 6, m: 1000000, t: 0.25}, // 6 Azul
-            {v: 7, m: 10000000, t: 0.1}, // 7 Violeta
-            {v: 8, m: null, t: 0.05},    // 8 Cinza
-            {v: 9, m: null, t: null},    // 9 Branco
-            {v: null, m: 0.1, t: 5},     // 10 Dourado
-            {v: null, m: 0.01, t: 10},   // 11 Prata
-            {v: null, m: null, t: null}  // 12 Rosa
+            {v: 0, m: 1, t: null}, {v: 1, m: 10, t: 1}, {v: 2, m: 100, t: 2},
+            {v: 3, m: 1000, t: null}, {v: 4, m: 10000, t: null}, {v: 5, m: 100000, t: 0.5},
+            {v: 6, m: 1000000, t: 0.25}, {v: 7, m: 10000000, t: 0.1}, {v: 8, m: null, t: 0.05},
+            {v: 9, m: null, t: null}, {v: null, m: 0.1, t: 5}, {v: null, m: 0.01, t: 10},
+            {v: null, m: null, t: null}
         ];
 
         let currentMode = 4;
@@ -150,7 +176,10 @@
         function changeMode(m) {
             currentMode = m;
             document.body.className = `mode-${m}`;
-            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i+4) === m));
+            document.querySelectorAll('.tab-btn').forEach((b, i) => {
+                const isTarget = (i === 0 && m === 4) || (i === 1 && m === 5);
+                b.classList.toggle('active', isTarget);
+            });
             render();
         }
 
@@ -168,33 +197,20 @@
                 col.className = 'color-column';
                 
                 mathData.forEach((data, cIdx) => {
-                    const opt = document.createElement('div');
                     const isDigit = i < (currentMode - 2);
                     const isMult = i === (currentMode - 2);
                     const isTol = i === (currentMode - 1);
-
                     let content = "-";
                     let disabled = false;
 
-                    if (isDigit) {
-                        if (cIdx >= 10) disabled = true; 
-                        content = disabled ? "-" : data.v;
-                    } 
-                    else if (isMult) {
-                        if (data.m === null) disabled = true;
-                        content = disabled ? "-" : "×" + formatMult(data.m);
-                    }
-                    else if (isTol) {
-                        if (data.t === null) disabled = true;
-                        content = disabled ? "-" : "±" + data.t + "%";
-                    }
+                    if (isDigit) { if (cIdx >= 10) disabled = true; content = disabled ? "-" : data.v; } 
+                    else if (isMult) { if (data.m === null) disabled = true; content = disabled ? "-" : "×" + formatMult(data.m); }
+                    else if (isTol) { if (data.t === null) disabled = true; content = disabled ? "-" : "±" + data.t + "%"; }
 
+                    const opt = document.createElement('div');
                     opt.className = `color-option c${cIdx} ${selections[i] === cIdx ? 'selected' : ''} ${disabled ? 'disabled' : ''}`;
                     opt.innerText = content;
-                    
-                    if (!disabled) {
-                        opt.onclick = () => { selections[i] = cIdx; render(); };
-                    }
+                    if (!disabled) { opt.onclick = () => { selections[i] = cIdx; render(); }; }
                     col.appendChild(opt);
                 });
                 picker.appendChild(col);
@@ -210,7 +226,7 @@
 
         function calculate() {
             let val = 0;
-            const multData = mathData[selections[currentMode - 2]].m;
+            const mult = mathData[selections[currentMode - 2]].m;
             const tol = mathData[selections[currentMode - 1]].t || 20;
 
             if (currentMode === 4) {
@@ -219,7 +235,7 @@
                 val = (mathData[selections[0]].v * 100) + (mathData[selections[1]].v * 10) + mathData[selections[2]].v;
             }
 
-            const nominal = val * multData;
+            const nominal = val * mult;
             const min = nominal * (1 - tol/100);
             const max = nominal * (1 + tol/100);
 
