@@ -11,7 +11,6 @@
             --text: #e0e0e0;
             --accent: #0366d6;
             --resistor-tan: #d1b48c;
-            --hatch: repeating-linear-gradient(45deg, #111, #111 5px, #1a1a1a 5px, #1a1a1a 10px);
         }
 
         body {
@@ -53,7 +52,7 @@
         .divider { color: #333; font-size: 1.3rem; }
         #v-min { color: #ef5350; } #v-max { color: #66bb6a; }
 
-        /* Seletor em Colunas Fixas (Ajuste automático de altura) */
+        /* Seletor em Colunas Fixas */
         .selector-container { flex: 1; display: grid; background: #000; }
         .mode-4 .selector-container { grid-template-columns: repeat(4, 1fr); }
         .mode-5 .selector-container { grid-template-columns: repeat(5, 1fr); }
@@ -62,13 +61,18 @@
         .color-option {
             flex: 1; display: flex; align-items: center; justify-content: center;
             font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: 0.1s;
+            border: 1px solid rgba(255,255,255,0.05);
         }
+        
+        /* Célula Desativada: mantém a cor, mas muda o cursor e reduz opacidade do texto */
         .color-option.disabled {
-            background: var(--hatch) !important; color: #444 !important; pointer-events: none;
+            cursor: default;
+            color: rgba(255,255,255,0.3) !important;
         }
-        .color-option.selected { outline: 3px solid #fff; outline-offset: -3px; z-index: 5; }
+        
+        .color-option.selected { outline: 4px solid #fff; outline-offset: -4px; z-index: 5; }
 
-        /* Cores Sequência IEC 60062 */
+        /* Cores Sequência Solicitada */
         .c0 { background: #000; color: #fff; } .c1 { background: #8B4513; color: #fff; }
         .c2 { background: #ff0000; color: #fff; } .c3 { background: #ffa500; color: #000; }
         .c4 { background: #ffff00; color: #000; } .c5 { background: #008000; color: #fff; }
@@ -156,16 +160,13 @@
             picker.innerHTML = ''; body.innerHTML = '';
 
             for (let i = 0; i < currentMode; i++) {
-                // Desenha faixas no resistor
                 const bandDiv = document.createElement('div');
                 bandDiv.className = `band-view c${selections[i]}`;
                 body.appendChild(bandDiv);
 
-                // Cria colunas de seleção
                 const col = document.createElement('div');
                 col.className = 'color-column';
                 
-                // Itera sobre as 13 cores obrigatoriamente
                 mathData.forEach((data, cIdx) => {
                     const opt = document.createElement('div');
                     const isDigit = i < (currentMode - 2);
@@ -176,15 +177,15 @@
                     let disabled = false;
 
                     if (isDigit) {
-                        if (cIdx >= 10) disabled = true; // Dourado, Prata, Rosa não são dígitos
+                        if (cIdx >= 10) disabled = true; 
                         content = disabled ? "-" : data.v;
                     } 
                     else if (isMult) {
-                        if (data.m === null) disabled = true; // Branco, Cinza, Rosa não são mult.
+                        if (data.m === null) disabled = true;
                         content = disabled ? "-" : "×" + formatMult(data.m);
                     }
                     else if (isTol) {
-                        if (data.t === null) disabled = true; // Laranja, Amarelo, Branco, Rosa s/ tol.
+                        if (data.t === null) disabled = true;
                         content = disabled ? "-" : "±" + data.t + "%";
                     }
 
@@ -209,7 +210,7 @@
 
         function calculate() {
             let val = 0;
-            const mult = mathData[selections[currentMode - 2]].m;
+            const multData = mathData[selections[currentMode - 2]].m;
             const tol = mathData[selections[currentMode - 1]].t || 20;
 
             if (currentMode === 4) {
@@ -218,7 +219,7 @@
                 val = (mathData[selections[0]].v * 100) + (mathData[selections[1]].v * 10) + mathData[selections[2]].v;
             }
 
-            const nominal = val * mult;
+            const nominal = val * multData;
             const min = nominal * (1 - tol/100);
             const max = nominal * (1 + tol/100);
 
