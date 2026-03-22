@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Calendário Contínuo / Continuous Calendar</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --grid-line: #222;
+            --text: #e0e0e0;
+            --accent: #0366d6;
+            --today: #ffeb3b;
+        }
+
+        body {
+            font-family: -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Cabeçalho Fixo */
+        .header-grid {
+            display: grid;
+            grid-template-columns: 60px 60px repeat(7, 1fr);
+            background: #151515;
+            border-bottom: 2px solid var(--accent);
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 10px 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Container de Rolagem */
+        #calendar-container {
+            flex: 1;
+            overflow-y: auto;
+            display: block;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 60px 60px repeat(7, 1fr);
+            border-bottom: 1px solid var(--grid-line);
+            min-height: 45px;
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid var(--grid-line);
+            font-size: 0.9rem;
+        }
+
+        .cell.year { font-weight: bold; color: var(--accent); font-size: 0.8rem; }
+        .cell.month { font-weight: bold; color: #888; font-size: 0.8rem; text-transform: uppercase; }
+        .cell.weekend { background: #111; }
+        .cell.today { color: var(--today); font-weight: bold; border: 1px solid var(--today); }
+
+        .day-num { width: 100%; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="header-grid" id="header">
+        <div>ANO</div>
+        <div>MÊS</div>
+        <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
+    </div>
+
+    <div id="calendar-container">
+        </div>
+
+    <script>
+        const container = document.getElementById('calendar-container');
+        const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+        const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        
+        let currentYear = new Date().getFullYear();
+        let startMonth = 0; // Janeiro
+
+        function getI18nMonths() {
+            return navigator.language.startsWith('pt') ? months : monthsEn;
+        }
+
+        function createWeekRow(year, month, dayStart) {
+            const row = document.createElement('div');
+            row.className = 'row';
+
+            // Coluna Ano
+            const yearCell = document.createElement('div');
+            yearCell.className = 'cell year';
+            if (month === 0 && dayStart <= 7) yearCell.innerText = year;
+            row.appendChild(yearCell);
+
+            // Coluna Mês
+            const monthCell = document.createElement('div');
+            monthCell.className = 'cell month';
+            if (dayStart <= 7) monthCell.innerText = getI18nMonths()[month];
+            row.appendChild(monthCell);
+
+            // Colunas Dias (7 colunas fixas de Dom a Sáb)
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < 7; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (i === 0 || i === 6) cell.classList.add('weekend');
+
+                // Lógica simplificada: aqui precisaríamos ajustar para 
+                // que a semana seja contínua. 
+                // Vou implementar a lógica de fluxo contínuo real abaixo.
+            }
+            return row;
+        }
+
+        // Lógica de Renderização Infinita (Simplificada para demonstração)
+        function renderCalendar(y) {
+            let date = new Date(y, 0, 1);
+            // Ajusta para o primeiro domingo antes ou no dia 1 de Jan
+            date.setDate(date.getDate() - date.getDay());
+
+            for (let i = 0; i < 100; i++) { // Renderiza 100 semanas
+                const row = document.createElement('div');
+                row.className = 'row';
+
+                // Ano e Mês aparecem apenas na transição
+                const yearDiv = document.createElement('div');
+                yearDiv.className = 'cell year';
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'cell month';
+
+                if (date.getDate() <= 7) {
+                    monthDiv.innerText = getI18nMonths()[date.getMonth()];
+                    if (date.getMonth() === 0) yearDiv.innerText = date.getFullYear();
+                }
+
+                row.appendChild(yearDiv);
+                row.appendChild(monthDiv);
+
+                for (let d = 0; d < 7; d++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'cell';
+                    if (d === 0 || d === 6) dayCell.classList.add('weekend');
+                    
+                    if (date.toDateString() === new Date().toDateString()) dayCell.classList.add('today');
+
+                    dayCell.innerText = date.getDate();
+                    row.appendChild(dayCell);
+                    date.setDate(date.getDate() + 1);
+                }
+                container.appendChild(row);
+            }
+        }
+
+        renderCalendar(currentYear);
+    </script>
+</body>
+</html>
