@@ -25,7 +25,7 @@
             overflow: hidden;
         }
 
-        /* Área do Resistor */
+        /* Topo: Visual do Resistor */
         .display-section {
             padding: 20px 0;
             display: flex;
@@ -50,10 +50,10 @@
         }
         .val-unit { font-size: 1.2rem; font-weight: 700; text-align: center; color: #fff; }
         .val-label { font-size: 0.7rem; color: #666; text-align: center; text-transform: uppercase; margin-top: 3px; }
-        .divider { color: #333; font-size: 1.3rem; font-weight: 300; }
+        .divider { color: #333; font-size: 1.3rem; }
         #v-min { color: #ef5350; } #v-max { color: #66bb6a; }
 
-        /* Seletor em Colunas Fixas */
+        /* Seletor em Colunas Fixas (Ajuste automático de altura) */
         .selector-container { flex: 1; display: grid; background: #000; }
         .mode-4 .selector-container { grid-template-columns: repeat(4, 1fr); }
         .mode-5 .selector-container { grid-template-columns: repeat(5, 1fr); }
@@ -68,7 +68,7 @@
         }
         .color-option.selected { outline: 3px solid #fff; outline-offset: -3px; z-index: 5; }
 
-        /* Cores Sequência IEC */
+        /* Cores Sequência IEC 60062 */
         .c0 { background: #000; color: #fff; } .c1 { background: #8B4513; color: #fff; }
         .c2 { background: #ff0000; color: #fff; } .c3 { background: #ffa500; color: #000; }
         .c4 { background: #ffff00; color: #000; } .c5 { background: #008000; color: #fff; }
@@ -77,7 +77,7 @@
         .c10 { background: #ffd700; color: #000; } .c11 { background: #c0c0c0; color: #000; }
         .c12 { background: #ff69b4; color: #000; } /* Rosa */
 
-        /* Abas */
+        /* Abas Inferiores */
         .nav-tabs { display: flex; height: 55px; background: #151515; }
         .tab-btn { flex: 1; border: none; background: none; color: #555; font-weight: bold; font-size: 0.95rem; }
         .tab-btn.active { color: var(--accent); background: #1a1a1a; border-top: 3px solid var(--accent); }
@@ -136,7 +136,7 @@
         function applyI18n() {
             const lang = navigator.language.startsWith('pt') ? 'pt' : 'en';
             const t = i18n[lang];
-            document.getElementById('page-title').innerText = t.title;
+            document.title = t.title;
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 el.innerText = t[key];
@@ -156,13 +156,16 @@
             picker.innerHTML = ''; body.innerHTML = '';
 
             for (let i = 0; i < currentMode; i++) {
+                // Desenha faixas no resistor
                 const bandDiv = document.createElement('div');
                 bandDiv.className = `band-view c${selections[i]}`;
                 body.appendChild(bandDiv);
 
+                // Cria colunas de seleção
                 const col = document.createElement('div');
                 col.className = 'color-column';
                 
+                // Itera sobre as 13 cores obrigatoriamente
                 mathData.forEach((data, cIdx) => {
                     const opt = document.createElement('div');
                     const isDigit = i < (currentMode - 2);
@@ -173,22 +176,24 @@
                     let disabled = false;
 
                     if (isDigit) {
-                        if (cIdx >= 10) disabled = true; 
+                        if (cIdx >= 10) disabled = true; // Dourado, Prata, Rosa não são dígitos
                         content = disabled ? "-" : data.v;
                     } 
                     else if (isMult) {
-                        if (data.m === null) disabled = true;
+                        if (data.m === null) disabled = true; // Branco, Cinza, Rosa não são mult.
                         content = disabled ? "-" : "×" + formatMult(data.m);
                     }
                     else if (isTol) {
-                        if (data.t === null) disabled = true;
+                        if (data.t === null) disabled = true; // Laranja, Amarelo, Branco, Rosa s/ tol.
                         content = disabled ? "-" : "±" + data.t + "%";
                     }
 
                     opt.className = `color-option c${cIdx} ${selections[i] === cIdx ? 'selected' : ''} ${disabled ? 'disabled' : ''}`;
                     opt.innerText = content;
                     
-                    if (!disabled) { opt.onclick = () => { selections[i] = cIdx; render(); }; }
+                    if (!disabled) {
+                        opt.onclick = () => { selections[i] = cIdx; render(); };
+                    }
                     col.appendChild(opt);
                 });
                 picker.appendChild(col);
@@ -217,9 +222,9 @@
             const min = nominal * (1 - tol/100);
             const max = nominal * (1 + tol/100);
 
-            document.getElementById('v-main').innerText = formatValue(nominal);
-            document.getElementById('v-min').innerText = formatValue(min);
-            document.getElementById('v-max').innerText = formatValue(max);
+            document.getElementById('v-main').innerText = formatValue(nominal) + " Ω";
+            document.getElementById('v-min').innerText = formatValue(min) + " Ω";
+            document.getElementById('v-max').innerText = formatValue(max) + " Ω";
         }
 
         function formatValue(n) {
