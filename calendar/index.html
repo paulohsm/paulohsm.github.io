@@ -10,7 +10,7 @@
             --grid-line: #1a1a1a;
             --text: #e0e0e0;
             --accent: #0366d6;
-            --today-bg: rgba(3, 102, 214, 0.2);
+            --today-bg: rgba(3, 102, 214, 0.3);
             --today-border: #0366d6;
             --cell-height: 65px; 
         }
@@ -18,7 +18,6 @@
         * { box-sizing: border-box; }
 
         html, body {
-            height: 100%;
             height: 100dvh;
             margin: 0;
             background-color: #000;
@@ -36,6 +35,7 @@
             flex-direction: column;
             border-left: 1px solid #222;
             border-right: 1px solid #222;
+            position: relative;
         }
 
         .header-days {
@@ -54,14 +54,11 @@
         #calendar-viewport {
             flex: 1;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* Suporte para scroll suave no iOS/Webkit */
+            -webkit-overflow-scrolling: touch;
         }
 
-        .year-section {
-            position: relative;
-            display: block;
-            width: 100%;
-        }
+        .year-section { position: relative; display: block; width: 100%; }
+        .year-section::after { content: ""; display: table; clear: both; }
 
         .year-label {
             position: sticky;
@@ -77,7 +74,7 @@
             font-weight: bold;
             font-size: 0.85rem;
             z-index: 50;
-            float: left; /* Mantido apenas para o label lateral */
+            float: left;
         }
 
         .week-row {
@@ -95,24 +92,25 @@
             font-size: 1rem;
         }
 
-        .cell.month-col {
-            font-size: 0.7rem;
-            color: #888;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
+        .cell.month-col { font-size: 0.7rem; color: #888; font-weight: bold; text-transform: uppercase; }
         .cell.weekend { background: #0d0d0d; }
-        .cell.today { 
-            background: var(--today-bg);
-            box-shadow: inset 0 0 0 2px var(--today-border);
-        }
+        .cell.today { background: var(--today-bg); box-shadow: inset 0 0 0 2px var(--today-border); }
 
-        /* Limpa o float para não quebrar o cálculo do container */
-        .year-section::after {
-            content: "";
-            display: table;
-            clear: both;
+        /* Botão Hoje */
+        .btn-today {
+            position: absolute;
+            bottom: 20px;
+            left: 70px; /* Ajustado para não colidir com o ano se necessário */
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 2000;
+            cursor: pointer;
+            font-size: 0.8rem;
         }
 
         #top-sentinel, #bottom-sentinel { height: 2px; width: 100%; }
@@ -132,12 +130,14 @@
             <div id="calendar-content"></div>
             <div id="bottom-sentinel"></div>
         </div>
+
+        <button class="btn-today" onclick="goToToday()" data-i18n="btnToday">HOJE</button>
     </div>
 
     <script>
         const i18n = {
-            pt: { year: "ANO", month: "MÊS", months: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"] },
-            en: { year: "YEAR", month: "MONTH", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] }
+            pt: { year: "ANO", month: "MÊS", btnToday: "HOJE", months: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"] },
+            en: { year: "YEAR", month: "MONTH", btnToday: "TODAY", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] }
         };
 
         const content = document.getElementById('calendar-content');
@@ -145,19 +145,21 @@
         const lang = navigator.language.startsWith('pt') ? 'pt' : 'en';
         const t = i18n[lang];
 
-        let topDate = new Date();
-        topDate.setDate(topDate.getDate() - topDate.getDay());
-        let bottomDate = new Date(topDate);
+        // Normalização: Começamos sempre no Domingo da semana atual
+        let today = new Date();
+        let startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+        
+        let topDate = new Date(startOfWeek);
+        let bottomDate = new Date(startOfWeek);
 
         function createWeek(date, mode) {
-            let year = date.getFullYear();
+            const year = date.getFullYear();
             let yearSection = document.getElementById(`year-${year}`);
 
             if (!yearSection) {
                 yearSection = document.createElement('div');
                 yearSection.id = `year-${year}`;
                 yearSection.className = 'year-section';
-                
                 const label = document.createElement('div');
                 label.className = 'year-label';
                 label.innerText = year;
@@ -169,71 +171,63 @@
 
             const row = document.createElement('div');
             row.className = 'week-row';
-            
-            // Coluna Ano (vazia para dar espaço ao label sticky lateral)
-            const yearSpacer = document.createElement('div');
-            yearSpacer.className = 'cell';
-            row.appendChild(yearSpacer);
+            row.appendChild(document.createElement('div')).className = 'cell'; // Spacer Ano
 
-            // Coluna Mês
             const monthCell = document.createElement('div');
             monthCell.className = 'cell month-col';
             
             let temp = new Date(date);
-            let hasDayOne = false;
-            let monthName = "";
-
-            // Verifica se algum dia desta semana é o dia 1
-            let checkMonth = new Date(date);
             for(let j=0; j<7; j++) {
-                if(checkMonth.getDate() === 1) {
-                    hasDayOne = true;
-                    monthName = t.months[checkMonth.getMonth()];
-                }
-                checkMonth.setDate(checkMonth.getDate() + 1);
+                let check = new Date(date.getTime() + j * 24 * 60 * 60 * 1000);
+                if(check.getDate() === 1) monthCell.innerText = t.months[check.getMonth()];
             }
-            if(hasDayOne) monthCell.innerText = monthName;
             row.appendChild(monthCell);
 
-            // Colunas Dias
             for(let i=0; i<7; i++) {
                 const day = document.createElement('div');
+                let d = new Date(date.getTime() + i * 24 * 60 * 60 * 1000);
                 day.className = 'cell' + (i===0 || i===6 ? ' weekend' : '');
-                if(temp.toDateString() === new Date().toDateString()) day.classList.add('today');
-                day.innerText = temp.getDate();
+                if(d.toDateString() === new Date().toDateString()) day.classList.add('today');
+                day.innerText = d.getDate();
                 row.appendChild(day);
-                temp.setDate(temp.getDate() + 1);
             }
 
             if (mode === 'append') yearSection.appendChild(row);
             else {
                 const rows = yearSection.querySelectorAll('.week-row');
-                if (rows.length > 0) yearSection.insertBefore(row, rows[0]);
-                else yearSection.appendChild(row);
+                yearSection.insertBefore(row, rows[0] || null);
             }
         }
 
         function load(dir) {
-            const currentHeight = content.offsetHeight;
-            const currentScroll = viewport.scrollTop;
+            const hPre = content.offsetHeight;
+            const sPre = viewport.scrollTop;
 
             for(let i=0; i<12; i++) {
                 if(dir === 'down') {
-                    createWeek(new Date(bottomDate), 'append');
                     bottomDate.setDate(bottomDate.getDate() + 7);
+                    createWeek(new Date(bottomDate), 'append');
                 } else {
                     topDate.setDate(topDate.getDate() - 7);
                     createWeek(new Date(topDate), 'prepend');
                 }
             }
 
-            if(dir === 'up') {
-                const newHeight = content.offsetHeight;
-                viewport.scrollTop = currentScroll + (newHeight - currentHeight);
-            }
+            if(dir === 'up') viewport.scrollTop = sPre + (content.offsetHeight - hPre);
         }
 
-        // Intersection Observer com maior margem para evitar engasgos no Android
+        function goToToday() {
+            content.innerHTML = "";
+            topDate = new Date(startOfWeek);
+            bottomDate = new Date(startOfWeek);
+            createWeek(new Date(topDate), 'append');
+            for(let i=0; i<8; i++) load('down');
+            setTimeout(() => {
+                const target = document.querySelector('.today');
+                if(target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }, 50);
+        }
+
         const obs = new IntersectionObserver(entries => {
             entries.forEach(e => {
                 if(e.isIntersecting) {
@@ -241,19 +235,14 @@
                     if(e.target.id === 'top-sentinel') load('up');
                 }
             });
-        }, { root: viewport, rootMargin: '200px' });
+        }, { root: viewport, rootMargin: '300px' });
 
         obs.observe(document.getElementById('top-sentinel'));
         obs.observe(document.getElementById('bottom-sentinel'));
 
-        // Carga Inicial
-        for(let i=0; i<8; i++) load('down');
-        
-        // Centralização inicial
-        setTimeout(() => {
-            const today = document.querySelector('.today');
-            if(today) today.scrollIntoView({ block: 'center' });
-        }, 150);
+        createWeek(new Date(topDate), 'append');
+        for(let i=0; i<10; i++) load('down');
+        setTimeout(() => document.querySelector('.today').scrollIntoView({block:'center'}), 100);
 
         document.querySelectorAll('[data-i18n]').forEach(el => {
             el.innerText = t[el.getAttribute('data-i18n')];
