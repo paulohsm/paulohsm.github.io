@@ -8,39 +8,84 @@
         :root { --bg: #0a0a0a; --panel: #161616; --accent: #2196f3; --text: #e0e0e0; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
         
-        .toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 15px; background: var(--panel); border-bottom: 1px solid #333; z-index: 10; }
+        /* Toolbar Superior Responsiva */
+        .toolbar { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
+            gap: 10px; padding: 12px; 
+            background: var(--panel); 
+            border-bottom: 1px solid #333; 
+            z-index: 10; 
+        }
         .control-group { display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-        select, input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; cursor: pointer; }
+        label { font-size: 0.65rem; color: #888; text-transform: uppercase; }
+        select, input { background: #222; color: #fff; border: 1px solid #444; padding: 6px; border-radius: 5px; font-size: 0.8rem; }
         
-        .main-layout { flex: 1; display: grid; grid-template-columns: 1fr 320px; overflow: hidden; }
-        #canvas-container { position: relative; background: #111; display: flex; align-items: center; justify-content: center; }
+        /* Layout Principal: Muda de Grid para Flex no Mobile */
+        .main-layout { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: row; 
+            overflow: hidden; 
+        }
+        
+        #canvas-container { 
+            flex: 1; 
+            position: relative; 
+            background: #111; 
+            min-height: 300px;
+        }
         canvas { width: 100%; height: 100%; display: block; }
 
-        .side-bar { background: var(--panel); border-left: 1px solid #333; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .data-card { background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
-        .data-line { font-family: 'Consolas', monospace; font-size: 0.85rem; margin: 5px 0; display: flex; justify-content: space-between; }
-        
-        .vector-legend { font-size: 0.8rem; display: flex; flex-direction: column; gap: 10px; }
-        .vector-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 8px; border-radius: 4px; }
-        .color-box { width: 12px; height: 12px; border-radius: 2px; margin-right: 8px; }
+        /* Barra Lateral que vira Rodapé no Mobile */
+        .side-bar { 
+            width: 300px; 
+            background: var(--panel); 
+            border-left: 1px solid #333; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            overflow-y: auto;
+        }
 
-        .btn-group { display: flex; gap: 10px; margin-top: auto; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        /* Estilos Reativos para Celular */
+        @media (max-width: 768px) {
+            .main-layout { flex-direction: column; }
+            .side-bar { 
+                width: 100%; 
+                height: auto; 
+                border-left: none; 
+                border-top: 1px solid #333; 
+                padding: 10px;
+                display: grid;
+                grid-template-columns: 1fr 1fr; /* Divide dados e legenda lado a lado */
+                gap: 10px;
+            }
+            .btn-group { grid-column: span 2; }
+            .vector-legend { font-size: 0.75rem; }
+        }
+
+        .data-card { background: #222; padding: 12px; border-radius: 8px; border-left: 4px solid var(--accent); }
+        .data-line { font-family: 'Consolas', monospace; font-size: 0.8rem; margin: 4px 0; display: flex; justify-content: space-between; }
+        .vector-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 6px; border-radius: 4px; margin-bottom: 4px; }
+        .color-box { width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; }
+
+        .btn-group { display: flex; gap: 8px; margin-top: auto; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
         .btn-move { background: var(--accent); color: white; }
         .btn-params { background: #444; color: white; }
-        button:hover { opacity: 0.8; transform: translateY(-1px); }
     </style>
 </head>
 <body>
 
 <div class="toolbar">
     <div class="control-group">
-        <label>Material do Bloco</label>
+        <label>Bloco</label>
         <select id="bloco" onchange="updateMaterials()"></select>
     </div>
     <div class="control-group">
-        <label>Material do Plano</label>
+        <label>Plano</label>
         <select id="plano" onchange="updateMaterials()"></select>
     </div>
     <div class="control-group">
@@ -60,18 +105,17 @@
 
     <div class="side-bar">
         <div class="data-card">
-            <div class="data-line"><span>ue (estático):</span> <span id="ue-val">0.50</span></div>
-            <div class="data-line"><span>uk (cinético):</span> <span id="uk-val">0.30</span></div>
-            <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
-            <div class="data-line"><span>Aceleração:</span> <span id="acc-val">0.00</span> m/s²</div>
-            <div class="data-line"><span>Velocidade:</span> <span id="vel-val">0.00</span> m/s</div>
+            <div class="data-line"><span>ue:</span> <span id="ue-val">0.50</span></div>
+            <div class="data-line"><span>uk:</span> <span id="uk-val">0.30</span></div>
+            <div class="data-line"><span>a:</span> <span id="acc-val">0.00</span> m/s²</div>
+            <div class="data-line"><span>v:</span> <span id="vel-val">0.00</span> m/s</div>
         </div>
 
         <div class="vector-legend">
-            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#2196f3"></span>Peso (P):</span> <span id="mod-p">0.00</span> N</div>
-            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#f44336"></span>Normal (N):</span> <span id="mod-n">0.00</span> N</div>
-            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#4caf50"></span>Atrito (Fat):</span> <span id="mod-fat">0.00</span> N</div>
-            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#ffffff"></span>Resultante (Fr):</span> <span id="mod-fr">0.00</span> N</div>
+            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#2196f3"></span>P:</span> <span id="mod-p">0</span>N</div>
+            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#f44336"></span>N:</span> <span id="mod-n">0</span>N</div>
+            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#4caf50"></span>Fat:</span> <span id="mod-fat">0</span>N</div>
+            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#ffffff"></span>Fr:</span> <span id="mod-fr">0</span>N</div>
         </div>
 
         <div class="btn-group">
@@ -86,15 +130,15 @@ const canvas = document.getElementById('simCanvas');
 const ctx = canvas.getContext('2d');
 
 const mats = {
-    madeira: { n: "Madeira", ue: 0.5, uk: 0.3, color: "#8B4513", pattern: "wood" },
-    aco: { n: "Aço Polido", ue: 0.74, uk: 0.57, color: "#71797E", pattern: "metal" },
-    borracha: { n: "Borracha", ue: 0.9, uk: 0.8, color: "#333", pattern: "rubber" },
-    gelo: { n: "Gelo", ue: 0.1, uk: 0.03, color: "#e3f2fd", pattern: "ice" },
-    aluminio: { n: "Alumínio", ue: 1.05, uk: 0.8, color: "#b0bec5", pattern: "metal" },
-    concreto: { n: "Concreto", ue: 1.0, uk: 0.8, color: "#555", pattern: "concrete" }
+    madeira: { n: "Madeira", ue: 0.5, uk: 0.3, color: "#8B4513" },
+    aco: { n: "Aço Polido", ue: 0.74, uk: 0.57, color: "#71797E" },
+    borracha: { n: "Borracha", ue: 0.9, uk: 0.8, color: "#333" },
+    gelo: { n: "Gelo", ue: 0.1, uk: 0.03, color: "#e3f2fd" },
+    aluminio: { n: "Alumínio", ue: 1.05, uk: 0.8, color: "#b0bec5" },
+    concreto: { n: "Concreto", ue: 1.0, uk: 0.8, color: "#555" }
 };
 
-let sim = { x: -300, v: 0, a: 0 };
+let sim = { x: -200, v: 0, a: 0 };
 const G = 9.8;
 
 function populate() {
@@ -121,7 +165,7 @@ function updateValues() {
     resetMotion();
 }
 
-function resetMotion() { sim.x = -300; sim.v = 0; sim.a = 0; }
+function resetMotion() { sim.x = -200; sim.v = 0; sim.a = 0; }
 function resetAll() {
     document.getElementById('bloco').value = "madeira";
     document.getElementById('plano').value = "aco";
@@ -131,8 +175,9 @@ function resetAll() {
 }
 
 function loop() {
-    if (canvas.width !== canvas.offsetWidth) {
-        canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+    if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
+        canvas.width = canvas.offsetWidth; 
+        canvas.height = canvas.offsetHeight;
     }
     ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -167,21 +212,20 @@ function loop() {
     const cy = canvas.height / 2;
     ctx.translate(cx, cy);
 
-    // Representação do Ângulo (Arco Matemático)
+    // Arco de Ângulo
     ctx.beginPath();
     ctx.strokeStyle = "#888";
-    ctx.lineWidth = 1;
-    ctx.arc(0, 0, 60, 0, theta);
+    ctx.arc(0, 0, 40, 0, theta);
     ctx.stroke();
     ctx.fillStyle = "#888";
-    ctx.font = "12px sans-serif";
-    ctx.fillText(document.getElementById('angle').value + "°", 65, 15);
+    ctx.font = "10px Arial";
+    ctx.fillText(document.getElementById('angle').value + "°", 45, 10);
 
     // Plano
     ctx.save();
     ctx.rotate(theta);
     ctx.fillStyle = mats[document.getElementById('plano').value].color;
-    ctx.fillRect(-canvas.width, 25, canvas.width*2, 40); 
+    ctx.fillRect(-canvas.width, 25, canvas.width*2, 30); 
     ctx.restore();
 
     // Bloco
@@ -189,21 +233,19 @@ function loop() {
     ctx.translate(sim.x * Math.cos(theta), sim.x * Math.sin(theta));
     ctx.rotate(theta);
     ctx.fillStyle = mats[document.getElementById('bloco').value].color;
-    ctx.fillRect(-25, -25, 50, 50);
+    ctx.fillRect(-20, -20, 40, 40); // Bloco ligeiramente menor para mobile
     
-    // Desenho dos Vetores com Letras Indicativas
-    const vScale = 1.0; 
+    const vScale = 0.8; // Escala dos vetores reduzida para não poluir
     const drawVec = (angle, mag, col, label, isResultant = false) => {
         if (mag < 0.5) return;
         const len = mag * vScale;
-        ctx.strokeStyle = col; ctx.lineWidth = isResultant ? 4 : 2;
+        ctx.strokeStyle = col; ctx.lineWidth = isResultant ? 3 : 1.5;
         ctx.beginPath(); ctx.moveTo(0,0);
         ctx.lineTo(len * Math.cos(angle), len * Math.sin(angle));
         ctx.stroke();
-        // Letra Indicativa
         ctx.fillStyle = col;
-        ctx.font = "bold 14px Arial";
-        ctx.fillText(label, (len+10) * Math.cos(angle), (len+10) * Math.sin(angle));
+        ctx.font = "10px Arial";
+        ctx.fillText(label, (len+8) * Math.cos(angle), (len+8) * Math.sin(angle));
     };
 
     drawVec(Math.PI/2 - theta, P, "#2196f3", "P"); 
@@ -213,11 +255,10 @@ function loop() {
 
     ctx.restore();
 
-    // Atualização da Legenda com Módulos
-    document.getElementById('mod-p').innerText = P.toFixed(1);
-    document.getElementById('mod-n').innerText = N.toFixed(1);
-    document.getElementById('mod-fat').innerText = fat.toFixed(1);
-    document.getElementById('mod-fr').innerText = (m * sim.a).toFixed(1);
+    document.getElementById('mod-p').innerText = P.toFixed(0);
+    document.getElementById('mod-n').innerText = N.toFixed(0);
+    document.getElementById('mod-fat').innerText = fat.toFixed(0);
+    document.getElementById('mod-fr').innerText = (m * sim.a).toFixed(0);
     document.getElementById('acc-val').innerText = sim.a.toFixed(2);
     document.getElementById('vel-val').innerText = sim.v.toFixed(2);
 
