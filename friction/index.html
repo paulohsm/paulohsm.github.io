@@ -8,22 +8,22 @@
         :root { --bg: #0a0a0a; --panel: #161616; --accent: #2196f3; --text: #e0e0e0; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
         
-        .toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 15px; background: var(--panel); border-bottom: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
+        .toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 15px; background: var(--panel); border-bottom: 1px solid #333; z-index: 10; }
         .control-group { display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
         select, input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; cursor: pointer; }
         
-        .main-layout { flex: 1; display: grid; grid-template-columns: 1fr 280px; overflow: hidden; }
-        #canvas-container { position: relative; background: #111; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .main-layout { flex: 1; display: grid; grid-template-columns: 1fr 320px; overflow: hidden; }
+        #canvas-container { position: relative; background: #111; display: flex; align-items: center; justify-content: center; }
         canvas { width: 100%; height: 100%; display: block; }
 
-        .side-bar { background: var(--panel); border-left: 1px solid #333; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .side-bar { background: var(--panel); border-left: 1px solid #333; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .data-card { background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
-        .data-line { font-family: 'Consolas', monospace; font-size: 0.9rem; margin: 5px 0; display: flex; justify-content: space-between; }
+        .data-line { font-family: 'Consolas', monospace; font-size: 0.85rem; margin: 5px 0; display: flex; justify-content: space-between; }
         
-        .vector-legend { font-size: 0.8rem; display: flex; flex-direction: column; gap: 8px; }
-        .vector-item { display: flex; align-items: center; gap: 10px; }
-        .color-box { width: 12px; height: 12px; border-radius: 2px; }
+        .vector-legend { font-size: 0.8rem; display: flex; flex-direction: column; gap: 10px; }
+        .vector-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 8px; border-radius: 4px; }
+        .color-box { width: 12px; height: 12px; border-radius: 2px; margin-right: 8px; }
 
         .btn-group { display: flex; gap: 10px; margin-top: auto; }
         button { flex: 1; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
@@ -45,7 +45,7 @@
     </div>
     <div class="control-group">
         <label>Massa: <span id="m-val">10</span> kg</label>
-        <input type="range" id="mass" min="1" max="50" value="10" oninput="updateValues()">
+        <input type="range" id="mass" min="1" max="20" value="10" oninput="updateValues()">
     </div>
     <div class="control-group">
         <label>Ângulo: <span id="a-val">30</span>°</label>
@@ -60,18 +60,18 @@
 
     <div class="side-bar">
         <div class="data-card">
-            <div class="data-line"><span>μₑ (estático):</span> <span id="ue-val">0.50</span></div>
-            <div class="data-line"><span>μₖ (cinético):</span> <span id="uk-val">0.30</span></div>
+            <div class="data-line"><span>ue (estático):</span> <span id="ue-val">0.50</span></div>
+            <div class="data-line"><span>uk (cinético):</span> <span id="uk-val">0.30</span></div>
             <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
             <div class="data-line"><span>Aceleração:</span> <span id="acc-val">0.00</span> m/s²</div>
             <div class="data-line"><span>Velocidade:</span> <span id="vel-val">0.00</span> m/s</div>
         </div>
 
         <div class="vector-legend">
-            <div class="vector-item"><div class="color-box" style="background:#2196f3"></div> Peso (P)</div>
-            <div class="vector-item"><div class="color-box" style="background:#f44336"></div> Normal (N)</div>
-            <div class="vector-item"><div class="color-box" style="background:#4caf50"></div> Atrito (fₐₜ)</div>
-            <div class="vector-item"><div class="color-box" style="background:#ffffff"></div> Resultante (Fᵣ)</div>
+            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#2196f3"></span>Peso (P):</span> <span id="mod-p">0.00</span> N</div>
+            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#f44336"></span>Normal (N):</span> <span id="mod-n">0.00</span> N</div>
+            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#4caf50"></span>Atrito (Fat):</span> <span id="mod-fat">0.00</span> N</div>
+            <div class="vector-item"><span><span class="color-box" style="display:inline-block; background:#ffffff"></span>Resultante (Fr):</span> <span id="mod-fr">0.00</span> N</div>
         </div>
 
         <div class="btn-group">
@@ -90,7 +90,8 @@ const mats = {
     aco: { n: "Aço Polido", ue: 0.74, uk: 0.57, color: "#71797E", pattern: "metal" },
     borracha: { n: "Borracha", ue: 0.9, uk: 0.8, color: "#333", pattern: "rubber" },
     gelo: { n: "Gelo", ue: 0.1, uk: 0.03, color: "#e3f2fd", pattern: "ice" },
-    aluminio: { n: "Alumínio", ue: 1.05, uk: 0.8, color: "#b0bec5", pattern: "metal" }
+    aluminio: { n: "Alumínio", ue: 1.05, uk: 0.8, color: "#b0bec5", pattern: "metal" },
+    concreto: { n: "Concreto", ue: 1.0, uk: 0.8, color: "#555", pattern: "concrete" }
 };
 
 let sim = { x: -300, v: 0, a: 0 };
@@ -107,12 +108,8 @@ function populate() {
 }
 
 function updateMaterials() {
-    const bKey = document.getElementById('bloco').value;
-    const pKey = document.getElementById('plano').value;
-    const b = mats[bKey];
-    const p = mats[pKey];
-    
-    // Coeficientes combinados
+    const b = mats[document.getElementById('bloco').value];
+    const p = mats[document.getElementById('plano').value];
     document.getElementById('ue-val').innerText = ((b.ue + p.ue)/2).toFixed(2);
     document.getElementById('uk-val').innerText = ((b.uk + p.uk)/2).toFixed(2);
     resetMotion();
@@ -124,58 +121,27 @@ function updateValues() {
     resetMotion();
 }
 
-function resetMotion() { 
-    sim.x = -300; 
-    sim.v = 0; 
-    sim.a = 0;
-}
-
+function resetMotion() { sim.x = -300; sim.v = 0; sim.a = 0; }
 function resetAll() {
     document.getElementById('bloco').value = "madeira";
     document.getElementById('plano').value = "aco";
     document.getElementById('mass').value = 10;
     document.getElementById('angle').value = 30;
-    updateValues();
-    updateMaterials();
-}
-
-function drawPattern(type, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(-25, -25, 50, 50);
-    
-    if (type === "wood") {
-        ctx.strokeStyle = "rgba(0,0,0,0.2)";
-        ctx.lineWidth = 1;
-        for(let i=-20; i<=20; i+=8) {
-            ctx.beginPath(); ctx.moveTo(i, -25); ctx.lineTo(i, 25); ctx.stroke();
-        }
-    } else if (type === "metal") {
-        let grad = ctx.createLinearGradient(-25, -25, 25, 25);
-        grad.addColorStop(0, 'rgba(255,255,255,0.3)');
-        grad.addColorStop(0.5, 'rgba(255,255,255,0)');
-        grad.addColorStop(1, 'rgba(0,0,0,0.3)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(-25, -25, 50, 50);
-    }
+    updateValues(); updateMaterials();
 }
 
 function loop() {
-    // Redimensionamento sem rastro
-    if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
+    if (canvas.width !== canvas.offsetWidth) {
+        canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
     }
-
-    // Limpeza TOTAL do quadro
-    ctx.setTransform(1, 0, 0, 1, 0, 0); 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
     
     const theta = document.getElementById('angle').value * Math.PI / 180;
     const m = parseFloat(document.getElementById('mass').value);
     const ue = parseFloat(document.getElementById('ue-val').innerText);
     const uk = parseFloat(document.getElementById('uk-val').innerText);
 
-    // Física
     const P = m * G;
     const Px = P * Math.sin(theta);
     const Py = P * Math.cos(theta);
@@ -184,95 +150,79 @@ function loop() {
     
     let fat = 0;
     if (sim.v === 0) {
-        if (Px > fat_est_max) {
-            fat = uk * N;
-            sim.a = (Px - fat) / m;
-        } else {
-            fat = Px;
-            sim.a = 0;
-        }
+        if (Px > fat_est_max) { fat = uk * N; sim.a = (Px - fat) / m; }
+        else { fat = Px; sim.a = 0; }
     } else {
         fat = uk * N;
         sim.a = (Px - fat) / m;
-        // Impedir que o atrito inverta o movimento (física de parada)
         if (sim.a < 0 && Math.abs(sim.v) < 0.1) { sim.v = 0; sim.a = 0; }
     }
 
-    // Atualiza posição se estiver no plano
     if (sim.x < canvas.width/2) {
         sim.v += sim.a * 0.016;
         sim.x += sim.v * 2; 
     }
 
-    // Centro do Canvas
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
-    
     ctx.translate(cx, cy);
 
-    // 1. Desenho do Plano (Texturizado)
+    // Representação do Ângulo (Arco Matemático)
+    ctx.beginPath();
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = 1;
+    ctx.arc(0, 0, 60, 0, theta);
+    ctx.stroke();
+    ctx.fillStyle = "#888";
+    ctx.font = "12px sans-serif";
+    ctx.fillText(document.getElementById('angle').value + "°", 65, 15);
+
+    // Plano
     ctx.save();
     ctx.rotate(theta);
-    const pMat = mats[document.getElementById('plano').value];
-    ctx.fillStyle = pMat.color;
+    ctx.fillStyle = mats[document.getElementById('plano').value].color;
     ctx.fillRect(-canvas.width, 25, canvas.width*2, 40); 
-    // Detalhe de textura do plano
-    if(pMat.pattern === "wood") {
-        ctx.fillStyle = "rgba(0,0,0,0.1)";
-        for(let j=-canvas.width; j<canvas.width; j+=40) ctx.fillRect(j, 25, 2, 40);
-    }
     ctx.restore();
 
-    // 2. Desenho do Bloco e Vetores
+    // Bloco
     ctx.save();
-    // Translação do bloco ao longo da inclinação
     ctx.translate(sim.x * Math.cos(theta), sim.x * Math.sin(theta));
-    
-    // Rotação do conjunto bloco+vetores para alinhar com o plano
     ctx.rotate(theta);
+    ctx.fillStyle = mats[document.getElementById('bloco').value].color;
+    ctx.fillRect(-25, -25, 50, 50);
     
-    const bMat = mats[document.getElementById('bloco').value];
-    drawPattern(bMat.pattern, bMat.color);
-    
-    // Funções de Vetores (Escalados)
-    const vScale = 1.2;
-    const drawVec = (angle, mag, col, isResultant = false) => {
+    // Desenho dos Vetores com Letras Indicativas
+    const vScale = 1.0; 
+    const drawVec = (angle, mag, col, label, isResultant = false) => {
         if (mag < 0.5) return;
         const len = mag * vScale;
-        ctx.strokeStyle = col; 
-        ctx.lineWidth = isResultant ? 4 : 2;
-        ctx.beginPath(); 
-        ctx.moveTo(0,0);
+        ctx.strokeStyle = col; ctx.lineWidth = isResultant ? 4 : 2;
+        ctx.beginPath(); ctx.moveTo(0,0);
         ctx.lineTo(len * Math.cos(angle), len * Math.sin(angle));
         ctx.stroke();
-        // Seta
+        // Letra Indicativa
         ctx.fillStyle = col;
-        ctx.beginPath();
-        ctx.arc(len * Math.cos(angle), len * Math.sin(angle), 3, 0, 7);
-        ctx.fill();
+        ctx.font = "bold 14px Arial";
+        ctx.fillText(label, (len+10) * Math.cos(angle), (len+10) * Math.sin(angle));
     };
 
-    // PESO: Precisa ser sempre vertical "para baixo" no mundo real.
-    // Como o contexto está rotacionado por theta, compensamos:
-    drawVec(Math.PI/2 - theta, P, "#2196f3"); 
-
-    // NORMAL: Perpendicular ao plano (para cima no contexto rotacionado)
-    drawVec(-Math.PI/2, N, "#f44336");       
-
-    // ATRITO: Paralelo ao plano, oposto ao movimento (para a esquerda no contexto rotacionado)
-    drawVec(Math.PI, fat, "#4caf50");        
-
-    // RESULTANTE: Paralela ao plano, na direção da aceleração
-    if (sim.a > 0.01) drawVec(0, m * sim.a, "#ffffff", true);
+    drawVec(Math.PI/2 - theta, P, "#2196f3", "P"); 
+    drawVec(-Math.PI/2, N, "#f44336", "N");       
+    drawVec(Math.PI, fat, "#4caf50", "Fat");        
+    if (sim.a > 0.01) drawVec(0, m * sim.a, "#ffffff", "Fr", true);
 
     ctx.restore();
 
+    // Atualização da Legenda com Módulos
+    document.getElementById('mod-p').innerText = P.toFixed(1);
+    document.getElementById('mod-n').innerText = N.toFixed(1);
+    document.getElementById('mod-fat').innerText = fat.toFixed(1);
+    document.getElementById('mod-fr').innerText = (m * sim.a).toFixed(1);
     document.getElementById('acc-val').innerText = sim.a.toFixed(2);
     document.getElementById('vel-val').innerText = sim.v.toFixed(2);
 
     requestAnimationFrame(loop);
 }
-
 populate();
 loop();
 </script>
