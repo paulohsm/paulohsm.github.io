@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador de Atrito | Paulo HSM</title>
+    <style>
+        :root { --bg: #0f0f0f; --text: #e0e0e0; --accent: #2196f3; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; padding: 15px; background: #1a1a1a; border-bottom: 2px solid #333; }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.75rem; color: #aaa; text-transform: uppercase; }
+        select, input { background: #2a2a2a; color: #fff; border: 1px solid #444; padding: 6px; border-radius: 4px; }
+        .main-container { flex: 1; display: grid; grid-template-columns: 1fr 300px; }
+        canvas { background: #121212; cursor: crosshair; }
+        .stats-panel { background: #1a1a1a; padding: 20px; border-left: 2px solid #333; font-family: 'Courier New', monospace; }
+        .force-legend { margin-top: 20px; font-size: 0.85rem; }
+        .btn-reset { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-reset:hover { background: #1976d2; }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <div class="control-group">
+        <label>Bloco</label>
+        <select id="bloco" onchange="initPhysics()"></select>
+    </div>
+    <div class="control-group">
+        <label>Plano</label>
+        <select id="plano" onchange="initPhysics()"></select>
+    </div>
+    <div class="control-group">
+        <label>Ângulo: <span id="angle-display">30</span>°</label>
+        <input type="range" id="angle" min="0" max="85" value="30" oninput="initPhysics()">
+    </div>
+    <div class="control-group">
+        <label>Massa: <span id="mass-display">10</span> kg</label>
+        <input type="range" id="mass" min="1" max="50" value="10" oninput="initPhysics()">
+    </div>
+    <button class="btn-reset" onclick="resetSim()">Reiniciar Movimento</button>
+</div>
+
+<div class="main-container">
+    <canvas id="simCanvas"></canvas>
+    <div class="stats-panel">
+        <h3 style="color: var(--accent)">Dados em Tempo Real</h3>
+        <div id="results"></div>
+        <div class="force-legend">
+            <p><b style="color: #2196f3">→ Peso (P)</b></p>
+            <p><b style="color: #f44336">→ Normal (N)</b></p>
+            <p><b style="color: #4caf50">→ Atrito (Fat)</b></p>
+            <p><b style="color: #ffffff">→ Resultante (Fr)</b></p>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+const materiais = {
+    madeira: { nome: "Madeira", ue: 0.5, ud: 0.3 },
+    aco: { nome: "Aço Polido", ue: 0.74, ud: 0.57 },
+    borracha: { nome: "Borracha", ue: 0.9, ud: 0.8 },
+    gelo: { nome: "Gelo", ue: 0.1, ud: 0.03 },
+    aluminio: { nome: "Alumínio", ue: 1.05, ud: 0.8 }
+};
+
+let sim = { posX: 100, vel: 0, accel: 0, time: 0 };
+
+function populate() {
+    const b = document.getElementById('bloco');
+    const p = document.getElementById('plano');
+    Object.keys(materiais).forEach(m => {
+        b.add(new Option(materiais[m].nome, m));
+        p.add(new Option(materiais[m].nome, m));
+    });
+    b.value = "madeira"; p.value = "aco";
+}
+
+function initPhysics() {
+    const angle = document.getElementById('angle').value;
+    const mass = document.getElementById('mass').value;
+    document.getElementById('angle-display').innerText = angle;
+    document.getElementById('mass-display').innerText = mass;
+    sim.accel = 0;
+}
+
+function resetSim() { sim.posX = 100; sim.vel = 0; sim.time = 0; }
+
+function drawVector(x, y, angle, mag, color, label) {
+    if (mag < 2) return;
+    const len = mag * 2; // Fator de escala visual
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    const endX = x + len * Math.cos(angle);
+    const endY = y + len * Math.sin(angle);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+    // Ponta da seta
+    ctx.beginPath();
+    ctx.arc(endX, endY, 4, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function loop() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    
+    const theta = document.getElementById('angle').value * Math.PI / 180;
+    const m = document.getElementById('mass').value;
+    const b = materiais[document.getElementById('bloco').value];
+    const p = materiais[document.getElementById('plano').value];
+    const g = 9.8;
+
+    // Cálculo simplificado de mu cruzado (média para o exemplo)
+    const ue = (b.ue + p.ue) / 2;
+    const ud = (b.ud + p.ud) / 2;
+
+    const P = m * g;
+    const Px = P * Math.sin(theta);
+    const Py = P * Math.cos(theta);
+    const N = Py;
+    
+    let Fat = 0;
+    if (sim.vel === 0) {
+        Fat = Math.min(Px, ue * N);
+        sim.accel = Px > ue * N ? (Px - ud * N) / m : 0;
+    } else {
+        Fat = ud * N;
+        sim.accel = (Px - Fat) / m;
+    }
+
+    if (sim.posX < canvas.width - 100) {
+        sim.vel += sim.accel * 0.016;
+        sim.posX += sim.vel;
+    }
+
+    // Desenho do Plano
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height - 50);
+    ctx.lineTo(canvas.width, canvas.height - 50 - canvas.width * Math.tan(theta));
+    ctx.stroke();
+
+    // Desenho do Bloco (CM)
+    const bx = sim.posX;
+    const by = canvas.height - 75 - sim.posX * Math.tan(theta);
+    ctx.fillStyle = "#8B4513";
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(-theta);
+    ctx.fillRect(-25, -25, 50, 50);
+    ctx.restore();
+
+    // Vetores no CM
+    drawVector(bx, by, Math.PI/2, P, "#2196f3"); // Peso
+    drawVector(bx, by, -theta - Math.PI/2, N, "#f44336"); // Normal
+    drawVector(bx, by, -theta, Fat, "#4caf50"); // Atrito
+    drawVector(bx, by, -theta, m * sim.accel, "#ffffff"); // Resultante (Preto/Branco para contraste)
+
+    document.getElementById('results').innerHTML = `
+        Aceleração: ${sim.accel.toFixed(2)} m/s²<br>
+        Velocidade: ${sim.vel.toFixed(2)} m/s<br>
+        μₑ: ${ue.toFixed(2)} | μꞩ: ${ud.toFixed(2)}
+    `;
+
+    requestAnimationFrame(loop);
+}
+
+populate();
+loop();
+</script>
+</body>
+</html>
