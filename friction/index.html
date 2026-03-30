@@ -6,9 +6,10 @@
     <title>Simulador de Atrito Pro | Paulo HSM</title>
     <style>
         :root { --bg: #0a0a0a; --panel: #161616; --accent: #2196f3; --text: #e0e0e0; }
+        * { box-sizing: border-box; } /* CRÍTICO: Garante que o padding não aumente a largura */
+        
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
         
-        /* Toolbar Superior */
         .toolbar { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); 
@@ -19,13 +20,12 @@
         }
         .control-group { display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
-        select, input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; cursor: pointer; }
+        select, input { background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; cursor: pointer; width: 100%; }
         
         .main-layout { flex: 1; display: flex; flex-direction: row; overflow: hidden; }
         #canvas-container { flex: 1; position: relative; background: #111; min-height: 180px; }
         canvas { width: 100%; height: 100%; display: block; }
 
-        /* Painel Lateral / Inferior */
         .side-bar { 
             width: 320px; 
             background: var(--panel); 
@@ -44,7 +44,6 @@
                 border-top: 1px solid #333; 
                 padding: 10px;
                 display: grid;
-                /* COLUNAS UNIFORMES: 50% cada, alinhadas com os botões */
                 grid-template-columns: 1fr 1fr; 
                 gap: 8px;
             }
@@ -69,6 +68,7 @@
             display: flex;
             align-items: center;
             white-space: nowrap;
+            overflow: hidden;
         }
 
         .label-text { margin-right: 5px; color: #aaa; }
@@ -76,8 +76,8 @@
 
         .color-box { width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; flex-shrink: 0; }
 
-        .btn-group { display: flex; gap: 8px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .btn-group { display: flex; gap: 8px; width: 100%; }
+        button { flex: 1; padding: 12px 5px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.75rem; transition: 0.2s; white-space: nowrap; }
         .btn-move { background: var(--accent); color: white; }
         .btn-params { background: #333; color: white; }
     </style>
@@ -86,11 +86,11 @@
 
 <div class="toolbar">
     <div class="control-group">
-        <label>Material do Bloco</label>
+        <label>Bloco</label>
         <select id="bloco" onchange="updateMaterials()"></select>
     </div>
     <div class="control-group">
-        <label>Material do Plano</label>
+        <label>Plano</label>
         <select id="plano" onchange="updateMaterials()"></select>
     </div>
     <div class="control-group">
@@ -171,8 +171,8 @@ function updateValues() {
 }
 
 function resetMotion() { 
-    // Ajuste dinâmico de início para mobile
-    sim.x = window.innerWidth < 768 ? -120 : -220; 
+    // Início fora da tela à esquerda/superior
+    sim.x = -(Math.max(canvas.width, canvas.height)); 
     sim.v = 0; 
     sim.a = 0; 
 }
@@ -215,10 +215,13 @@ function loop() {
         if (sim.a < 0 && Math.abs(sim.v) < 0.1) { sim.v = 0; sim.a = 0; }
     }
 
-    const endPoint = isMobile ? canvas.width/4 : canvas.width/3;
-    if (sim.x < endPoint) {
+    // Ponto de parada: Calculado dinamicamente para chegar ao final da área visível
+    const limit = (canvas.width / (2 * Math.cos(theta))) - 30;
+    if (sim.x < limit) {
         sim.v += sim.a * 0.016;
-        sim.x += sim.v * (isMobile ? 1.2 : 2); 
+        sim.x += sim.v * 2; 
+    } else {
+        sim.v = 0; sim.a = 0;
     }
 
     const cx = canvas.width / 2;
@@ -226,14 +229,14 @@ function loop() {
     ctx.translate(cx, cy);
 
     // Arco de Ângulo
-    const arcSize = isMobile ? 30 : 45;
+    const arcSize = isMobile ? 35 : 50;
     ctx.beginPath();
     ctx.strokeStyle = "#444";
     ctx.arc(0, 0, arcSize, 0, theta);
     ctx.stroke();
     ctx.fillStyle = "#888";
-    ctx.font = isMobile ? "9px Arial" : "11px Arial";
-    ctx.fillText(document.getElementById('angle').value + "°", arcSize+3, 10);
+    ctx.font = isMobile ? "10px Arial" : "12px Arial";
+    ctx.fillText(document.getElementById('angle').value + "°", arcSize+5, 12);
 
     // Plano
     ctx.save();
@@ -247,10 +250,10 @@ function loop() {
     ctx.translate(sim.x * Math.cos(theta), sim.x * Math.sin(theta));
     ctx.rotate(theta);
     ctx.fillStyle = mats[document.getElementById('bloco').value].color;
-    const bSize = isMobile ? 15 : 22; // Redução de escala mobile
+    const bSize = isMobile ? 18 : 25;
     ctx.fillRect(-bSize, -bSize, bSize*2, bSize*2);
     
-    const vScale = isMobile ? 0.5 : 0.85; // Escala de vetores reduzida no mobile
+    const vScale = isMobile ? 0.6 : 0.9;
     const drawVec = (angle, mag, col, label, isResultant = false) => {
         if (mag < 0.5) return;
         const len = mag * vScale;
