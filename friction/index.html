@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Simulador de Atrito Pro | Paulo HSM</title>
+    <title>Atrito Estático e Dinâmico</title>
     <style>
         :root { --bg: #0a0a0a; --panel: #161616; --accent: #2196f3; --text: #e0e0e0; }
         * { box-sizing: border-box; }
@@ -194,7 +194,7 @@ function handlePause() {
 
 function resetMotion() { 
     // Coordenadas iniciais otimizadas para borda esquerda
-    sim.x = window.innerWidth < 768 ? -180 : -280; 
+    sim.x = window.innerWidth < 768 ? -160 : -380; 
     sim.v = 0; 
     sim.a = 0;
     if (sim.startedOnce) {
