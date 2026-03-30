@@ -6,7 +6,7 @@
     <title>Simulador de Atrito Pro | Paulo HSM</title>
     <style>
         :root { --bg: #0a0a0a; --panel: #161616; --accent: #2196f3; --text: #e0e0e0; }
-        * { box-sizing: border-box; } /* CRÍTICO: Garante que o padding não aumente a largura */
+        * { box-sizing: border-box; }
         
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
         
@@ -50,36 +50,18 @@
             .btn-group { grid-column: span 2; margin-top: 5px; }
         }
 
-        .data-card, .vector-legend { 
-            background: #222; 
-            padding: 10px; 
-            border-radius: 6px; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center;
-        }
-        
+        .data-card, .vector-legend { background: #222; padding: 10px; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; }
         .data-card { border-left: 3px solid var(--accent); }
-
-        .data-line, .vector-item { 
-            font-family: 'Consolas', monospace; 
-            font-size: 0.8rem; 
-            margin: 3px 0; 
-            display: flex;
-            align-items: center;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-
+        .data-line, .vector-item { font-family: 'Consolas', monospace; font-size: 0.8rem; margin: 3px 0; display: flex; align-items: center; white-space: nowrap; }
         .label-text { margin-right: 5px; color: #aaa; }
         .value-text { font-weight: bold; color: #fff; }
-
         .color-box { width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; flex-shrink: 0; }
 
         .btn-group { display: flex; gap: 8px; width: 100%; }
         button { flex: 1; padding: 12px 5px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.75rem; transition: 0.2s; white-space: nowrap; }
-        .btn-move { background: var(--accent); color: white; }
-        .btn-params { background: #333; color: white; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-start { background: var(--accent); color: white; }
+        .btn-pause { background: #444; color: white; }
     </style>
 </head>
 <body>
@@ -94,12 +76,12 @@
         <select id="plano" onchange="updateMaterials()"></select>
     </div>
     <div class="control-group">
-        <label>Massa: <span id="m-val">10</span> kg</label>
-        <input type="range" id="mass" min="1" max="20" value="10" oninput="updateValues()">
+        <label>Massa: <span id="m-val">10.0</span> kg</label>
+        <input type="range" id="mass" min="1" max="20" value="10" step="0.1" oninput="updateValues()">
     </div>
     <div class="control-group">
-        <label>Ângulo: <span id="a-val">30</span>°</label>
-        <input type="range" id="angle" min="0" max="80" value="30" oninput="updateValues()">
+        <label>Ângulo: <span id="a-val">30.0</span>°</label>
+        <input type="range" id="angle" min="0" max="80" value="30" step="0.1" oninput="updateValues()">
     </div>
 </div>
 
@@ -109,12 +91,8 @@
     </div>
 
     <div class="side-bar">
-        <div class="data-card">
-            <div class="data-line"><span class="label-text">&mu;&#8337;:</span> <span class="value-text" id="ue-val">0.50</span></div>
-            <div class="data-line"><span class="label-text">&mu;&#8339;:</span> <span class="value-text" id="uk-val">0.30</span></div>
-            <div class="data-line"><span class="label-text">a:</span> <span class="value-text" id="acc-val">0.00</span> m/s&sup2;</div>
-            <div class="data-line"><span class="label-text">v:</span> <span class="value-text" id="vel-val">0.00</span> m/s</div>
-        </div>
+        <div class="data-card" id="card-coefs">
+            </div>
 
         <div class="vector-legend">
             <div class="vector-item"><span class="color-box" style="background:#2196f3"></span> <span class="label-text">P:</span> <span class="value-text"><span id="mod-p">0</span> N</span></div>
@@ -124,8 +102,8 @@
         </div>
 
         <div class="btn-group">
-            <button class="btn-move" onclick="resetMotion()">REPOSICIONAR</button>
-            <button class="btn-params" onclick="resetAll()">RESET TOTAL</button>
+            <button id="btnStart" class="btn-start" onclick="handleStart()">INICIAR</button>
+            <button id="btnPause" class="btn-pause" onclick="handlePause()" disabled>PAUSAR</button>
         </div>
     </div>
 </div>
@@ -143,7 +121,7 @@ const mats = {
     concreto: { n: "Concreto", ue: 1.0, uk: 0.8, color: "#555" }
 };
 
-let sim = { x: -200, v: 0, a: 0 };
+let sim = { x: -250, v: 0, a: 0, active: false, paused: false, startedOnce: false };
 const G = 9.8;
 
 function populate() {
@@ -159,36 +137,56 @@ function populate() {
 function updateMaterials() {
     const b = mats[document.getElementById('bloco').value];
     const p = mats[document.getElementById('plano').value];
-    document.getElementById('ue-val').innerText = ((b.ue + p.ue)/2).toFixed(2);
-    document.getElementById('uk-val').innerText = ((b.uk + p.uk)/2).toFixed(2);
+    const ue = ((b.ue + p.ue)/2).toFixed(2);
+    const uk = ((b.uk + p.uk)/2).toFixed(2);
+    
+    document.getElementById('card-coefs').innerHTML = `
+        <div class="data-line"><span class="label-text">μ<sub>e</sub>:</span> <span class="value-text">${ue}</span></div>
+        <div class="data-line"><span class="label-text">μ<sub>d</sub>:</span> <span class="value-text">${uk}</span></div>
+        <div class="data-line"><span class="label-text">a:</span> <span class="value-text" id="acc-val">0.00</span> m/s²</div>
+        <div class="data-line"><span class="label-text">v:</span> <span class="value-text" id="vel-val">0.00</span> m/s</div>
+    `;
     resetMotion();
 }
 
 function updateValues() {
-    document.getElementById('m-val').innerText = document.getElementById('mass').value;
-    document.getElementById('a-val').innerText = document.getElementById('angle').value;
+    document.getElementById('m-val').innerText = parseFloat(document.getElementById('mass').value).toFixed(1);
+    document.getElementById('a-val').innerText = parseFloat(document.getElementById('angle').value).toFixed(1);
     resetMotion();
 }
 
-function resetMotion() { 
-    // Início fora da tela à esquerda/superior
-    sim.x = -(Math.max(canvas.width, canvas.height)); 
-    sim.v = 0; 
-    sim.a = 0; 
+function handleStart() {
+    if (!sim.active && !sim.startedOnce) {
+        sim.active = true;
+        sim.startedOnce = true;
+        document.getElementById('btnStart').innerText = "REINICIAR";
+        document.getElementById('btnPause').disabled = false;
+    } else {
+        resetMotion();
+        sim.active = true;
+        sim.paused = false;
+        document.getElementById('btnPause').innerText = "PAUSAR";
+    }
 }
 
-function resetAll() {
-    document.getElementById('bloco').value = "madeira";
-    document.getElementById('plano').value = "aco";
-    document.getElementById('mass').value = 10;
-    document.getElementById('angle').value = 30;
-    updateValues(); updateMaterials();
+function handlePause() {
+    sim.paused = !sim.paused;
+    document.getElementById('btnPause').innerText = sim.paused ? "CONTINUAR" : "PAUSAR";
+}
+
+function resetMotion() { 
+    sim.x = -250; 
+    sim.v = 0; 
+    sim.a = 0;
+    if (sim.startedOnce) {
+        sim.paused = false;
+        document.getElementById('btnPause').innerText = "PAUSAR";
+    }
 }
 
 function loop() {
     if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
-        canvas.width = canvas.offsetWidth; 
-        canvas.height = canvas.offsetHeight;
+        canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
     }
     ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -196,8 +194,10 @@ function loop() {
     const isMobile = window.innerWidth < 768;
     const theta = document.getElementById('angle').value * Math.PI / 180;
     const m = parseFloat(document.getElementById('mass').value);
-    const ue = parseFloat(document.getElementById('ue-val').innerText);
-    const uk = parseFloat(document.getElementById('uk-val').innerText);
+    
+    // Captura coeficientes do card (que já são calculados em updateMaterials)
+    const ue = parseFloat(document.querySelector('#card-coefs .value-text').innerText);
+    const uk = parseFloat(document.querySelectorAll('#card-coefs .value-text')[1].innerText);
 
     const P = m * G;
     const Px = P * Math.sin(theta);
@@ -215,13 +215,15 @@ function loop() {
         if (sim.a < 0 && Math.abs(sim.v) < 0.1) { sim.v = 0; sim.a = 0; }
     }
 
-    // Ponto de parada: Calculado dinamicamente para chegar ao final da área visível
-    const limit = (canvas.width / (2 * Math.cos(theta))) - 30;
-    if (sim.x < limit) {
-        sim.v += sim.a * 0.016;
-        sim.x += sim.v * 2; 
-    } else {
-        sim.v = 0; sim.a = 0;
+    // Executa física apenas se estiver ativo e não pausado
+    if (sim.active && !sim.paused) {
+        const limit = (canvas.width / (2 * Math.cos(theta))) - 30;
+        if (sim.x < limit) {
+            sim.v += sim.a * 0.016;
+            sim.x += sim.v * 2; 
+        } else {
+            sim.v = 0; sim.a = 0;
+        }
     }
 
     const cx = canvas.width / 2;
@@ -230,12 +232,9 @@ function loop() {
 
     // Arco de Ângulo
     const arcSize = isMobile ? 35 : 50;
-    ctx.beginPath();
-    ctx.strokeStyle = "#444";
-    ctx.arc(0, 0, arcSize, 0, theta);
-    ctx.stroke();
-    ctx.fillStyle = "#888";
-    ctx.font = isMobile ? "10px Arial" : "12px Arial";
+    ctx.beginPath(); ctx.strokeStyle = "#444";
+    ctx.arc(0, 0, arcSize, 0, theta); ctx.stroke();
+    ctx.fillStyle = "#888"; ctx.font = isMobile ? "10px Arial" : "12px Arial";
     ctx.fillText(document.getElementById('angle').value + "°", arcSize+5, 12);
 
     // Plano
@@ -261,8 +260,7 @@ function loop() {
         ctx.beginPath(); ctx.moveTo(0,0);
         ctx.lineTo(len * Math.cos(angle), len * Math.sin(angle));
         ctx.stroke();
-        ctx.fillStyle = col;
-        ctx.font = `bold ${isMobile?10:12}px Arial`;
+        ctx.fillStyle = col; ctx.font = `bold ${isMobile?10:12}px Arial`;
         ctx.fillText(label, (len+(isMobile?6:10)) * Math.cos(angle), (len+(isMobile?6:10)) * Math.sin(angle));
     };
 
