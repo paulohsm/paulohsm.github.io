@@ -69,12 +69,8 @@
         .btn-group { display: flex; gap: 8px; width: 100%; }
         button { flex: 1; padding: 12px 5px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.75rem; transition: 0.2s; white-space: nowrap; }
         
-        /* Botões Azuis quando ativos */
         .btn-active { background: var(--accent); color: white; }
-        /* Botão Cinza quando desativado */
         button:disabled { background: #333 !important; color: #666 !important; opacity: 0.5; cursor: not-allowed; }
-        
-        .btn-params { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
@@ -133,7 +129,7 @@ const mats = {
     concreto: { n: "Concreto", ue: 1.0, uk: 0.8, color: "#555" }
 };
 
-let sim = { x: -150, v: 0, a: 0, active: false, paused: false, startedOnce: false };
+let sim = { x: -280, v: 0, a: 0, active: false, paused: false, startedOnce: false };
 const G = 9.8;
 
 function populate() {
@@ -144,6 +140,14 @@ function populate() {
     });
     b.value = "madeira"; p.value = "aco";
     updateMaterials();
+}
+
+function triggerParamChange() {
+    sim.startedOnce = false;
+    sim.active = false;
+    document.getElementById('btnStart').innerText = "INICIAR";
+    document.getElementById('btnPause').disabled = true;
+    document.getElementById('btnPause').innerText = "PAUSAR";
 }
 
 function updateMaterials() {
@@ -158,12 +162,14 @@ function updateMaterials() {
         <div class="data-line"><span class="label-text">a:</span> <span class="value-text" id="acc-val">0.00</span> m/s²</div>
         <div class="data-line"><span class="label-text">v:</span> <span class="value-text" id="vel-val">0.00</span> m/s</div>
     `;
+    triggerParamChange();
     resetMotion();
 }
 
 function updateValues() {
     document.getElementById('m-val').innerText = parseFloat(document.getElementById('mass').value).toFixed(1);
     document.getElementById('a-val').innerText = parseFloat(document.getElementById('angle').value).toFixed(1);
+    triggerParamChange();
     resetMotion();
 }
 
@@ -187,8 +193,8 @@ function handlePause() {
 }
 
 function resetMotion() { 
-    // Garante visibilidade inicial tanto no desktop quanto mobile
-    sim.x = window.innerWidth < 768 ? -100 : -150; 
+    // Coordenadas iniciais otimizadas para borda esquerda
+    sim.x = window.innerWidth < 768 ? -180 : -280; 
     sim.v = 0; 
     sim.a = 0;
     if (sim.startedOnce) {
@@ -289,7 +295,7 @@ function loop() {
         drawArrowhead(endX, endY, angle, col);
 
         ctx.fillStyle = col; ctx.font = `bold ${isMobile?10:12}px Arial`;
-        ctx.fillText(label, (len+(isMobile?12:15)) * Math.cos(angle), (len+(isMobile?12:15)) * Math.sin(angle));
+        ctx.fillText(label, (len+(isMobile?15:18)) * Math.cos(angle), (len+(isMobile?15:18)) * Math.sin(angle));
     };
 
     drawVec(Math.PI/2 - theta, P, "#2196f3", "P"); 
@@ -299,7 +305,6 @@ function loop() {
 
     ctx.restore();
 
-    // Atualização com precisão decimal conforme solicitado
     document.getElementById('mod-p').innerText = P.toFixed(1);
     document.getElementById('mod-n').innerText = N.toFixed(1);
     document.getElementById('mod-fat').innerText = fat.toFixed(1);
