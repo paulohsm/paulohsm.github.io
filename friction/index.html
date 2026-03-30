@@ -27,13 +27,13 @@
         canvas { width: 100%; height: 100%; display: block; }
 
         .side-bar { 
-            width: 320px; 
+            width: 340px; 
             background: var(--panel); 
             border-left: 1px solid #333; 
-            padding: 20px; 
+            padding: 15px; 
             display: flex; 
             flex-direction: column; 
-            gap: 15px;
+            gap: 12px;
         }
 
         @media (max-width: 768px) {
@@ -50,8 +50,17 @@
             .btn-group { grid-column: span 2; margin-top: 5px; }
         }
 
-        .data-card, .vector-legend { background: #222; padding: 10px; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; }
-        .data-card { border-left: 3px solid var(--accent); }
+        .data-card, .vector-legend { 
+            background: #222; 
+            padding: 10px; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            border-left: 3px solid var(--accent);
+            border-right: 3px solid var(--accent);
+        }
+        
         .data-line, .vector-item { font-family: 'Consolas', monospace; font-size: 0.8rem; margin: 3px 0; display: flex; align-items: center; white-space: nowrap; }
         .label-text { margin-right: 5px; color: #aaa; }
         .value-text { font-weight: bold; color: #fff; }
@@ -59,9 +68,13 @@
 
         .btn-group { display: flex; gap: 8px; width: 100%; }
         button { flex: 1; padding: 12px 5px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.75rem; transition: 0.2s; white-space: nowrap; }
-        button:disabled { opacity: 0.3; cursor: not-allowed; }
-        .btn-start { background: var(--accent); color: white; }
-        .btn-pause { background: #444; color: white; }
+        
+        /* Botões Azuis quando ativos */
+        .btn-active { background: var(--accent); color: white; }
+        /* Botão Cinza quando desativado */
+        button:disabled { background: #333 !important; color: #666 !important; opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-params { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
@@ -91,19 +104,18 @@
     </div>
 
     <div class="side-bar">
-        <div class="data-card" id="card-coefs">
-            </div>
+        <div class="data-card" id="card-coefs"></div>
 
         <div class="vector-legend">
-            <div class="vector-item"><span class="color-box" style="background:#2196f3"></span> <span class="label-text">P:</span> <span class="value-text"><span id="mod-p">0</span> N</span></div>
-            <div class="vector-item"><span class="color-box" style="background:#f44336"></span> <span class="label-text">N:</span> <span class="value-text"><span id="mod-n">0</span> N</span></div>
-            <div class="vector-item"><span class="color-box" style="background:#4caf50"></span> <span class="label-text">Fat:</span> <span class="value-text"><span id="mod-fat">0</span> N</span></div>
-            <div class="vector-item"><span class="color-box" style="background:#ffffff"></span> <span class="label-text">Fr:</span> <span class="value-text"><span id="mod-fr">0</span> N</span></div>
+            <div class="vector-item"><span class="color-box" style="background:#2196f3"></span> <span class="label-text">P:</span> <span class="value-text"><span id="mod-p">0.0</span> N</span></div>
+            <div class="vector-item"><span class="color-box" style="background:#f44336"></span> <span class="label-text">N:</span> <span class="value-text"><span id="mod-n">0.0</span> N</span></div>
+            <div class="vector-item"><span class="color-box" style="background:#4caf50"></span> <span class="label-text">Fat:</span> <span class="value-text"><span id="mod-fat">0.0</span> N</span></div>
+            <div class="vector-item"><span class="color-box" style="background:#ffffff"></span> <span class="label-text">Fr:</span> <span class="value-text"><span id="mod-fr">0.0</span> N</span></div>
         </div>
 
         <div class="btn-group">
-            <button id="btnStart" class="btn-start" onclick="handleStart()">INICIAR</button>
-            <button id="btnPause" class="btn-pause" onclick="handlePause()" disabled>PAUSAR</button>
+            <button id="btnStart" class="btn-active" onclick="handleStart()">INICIAR</button>
+            <button id="btnPause" class="btn-active" onclick="handlePause()" disabled>PAUSAR</button>
         </div>
     </div>
 </div>
@@ -121,7 +133,7 @@ const mats = {
     concreto: { n: "Concreto", ue: 1.0, uk: 0.8, color: "#555" }
 };
 
-let sim = { x: -250, v: 0, a: 0, active: false, paused: false, startedOnce: false };
+let sim = { x: -150, v: 0, a: 0, active: false, paused: false, startedOnce: false };
 const G = 9.8;
 
 function populate() {
@@ -175,13 +187,25 @@ function handlePause() {
 }
 
 function resetMotion() { 
-    sim.x = -250; 
+    // Garante visibilidade inicial tanto no desktop quanto mobile
+    sim.x = window.innerWidth < 768 ? -100 : -150; 
     sim.v = 0; 
     sim.a = 0;
     if (sim.startedOnce) {
         sim.paused = false;
         document.getElementById('btnPause').innerText = "PAUSAR";
     }
+}
+
+function drawArrowhead(endX, endY, angle, color) {
+    const headLen = 8;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(endX - headLen * Math.cos(angle - Math.PI / 7), endY - headLen * Math.sin(angle - Math.PI / 7));
+    ctx.lineTo(endX - headLen * Math.cos(angle + Math.PI / 7), endY - headLen * Math.sin(angle + Math.PI / 7));
+    ctx.closePath();
+    ctx.fill();
 }
 
 function loop() {
@@ -195,7 +219,6 @@ function loop() {
     const theta = document.getElementById('angle').value * Math.PI / 180;
     const m = parseFloat(document.getElementById('mass').value);
     
-    // Captura coeficientes do card (que já são calculados em updateMaterials)
     const ue = parseFloat(document.querySelector('#card-coefs .value-text').innerText);
     const uk = parseFloat(document.querySelectorAll('#card-coefs .value-text')[1].innerText);
 
@@ -215,7 +238,6 @@ function loop() {
         if (sim.a < 0 && Math.abs(sim.v) < 0.1) { sim.v = 0; sim.a = 0; }
     }
 
-    // Executa física apenas se estiver ativo e não pausado
     if (sim.active && !sim.paused) {
         const limit = (canvas.width / (2 * Math.cos(theta))) - 30;
         if (sim.x < limit) {
@@ -231,7 +253,7 @@ function loop() {
     ctx.translate(cx, cy);
 
     // Arco de Ângulo
-    const arcSize = isMobile ? 35 : 50;
+    const arcSize = isMobile ? 40 : 60;
     ctx.beginPath(); ctx.strokeStyle = "#444";
     ctx.arc(0, 0, arcSize, 0, theta); ctx.stroke();
     ctx.fillStyle = "#888"; ctx.font = isMobile ? "10px Arial" : "12px Arial";
@@ -253,15 +275,21 @@ function loop() {
     ctx.fillRect(-bSize, -bSize, bSize*2, bSize*2);
     
     const vScale = isMobile ? 0.6 : 0.9;
-    const drawVec = (angle, mag, col, label, isResultant = false) => {
+    const drawVec = (angle, mag, col, label, isFr = false) => {
         if (mag < 0.5) return;
         const len = mag * vScale;
-        ctx.strokeStyle = col; ctx.lineWidth = isResultant ? (isMobile?2:3) : 1.5;
+        const endX = len * Math.cos(angle);
+        const endY = len * Math.sin(angle);
+        
+        ctx.strokeStyle = col; ctx.lineWidth = isFr ? 3 : 1.5;
         ctx.beginPath(); ctx.moveTo(0,0);
-        ctx.lineTo(len * Math.cos(angle), len * Math.sin(angle));
+        ctx.lineTo(endX, endY);
         ctx.stroke();
+        
+        drawArrowhead(endX, endY, angle, col);
+
         ctx.fillStyle = col; ctx.font = `bold ${isMobile?10:12}px Arial`;
-        ctx.fillText(label, (len+(isMobile?6:10)) * Math.cos(angle), (len+(isMobile?6:10)) * Math.sin(angle));
+        ctx.fillText(label, (len+(isMobile?12:15)) * Math.cos(angle), (len+(isMobile?12:15)) * Math.sin(angle));
     };
 
     drawVec(Math.PI/2 - theta, P, "#2196f3", "P"); 
@@ -271,10 +299,11 @@ function loop() {
 
     ctx.restore();
 
-    document.getElementById('mod-p').innerText = P.toFixed(0);
-    document.getElementById('mod-n').innerText = N.toFixed(0);
-    document.getElementById('mod-fat').innerText = fat.toFixed(0);
-    document.getElementById('mod-fr').innerText = (m * sim.a).toFixed(0);
+    // Atualização com precisão decimal conforme solicitado
+    document.getElementById('mod-p').innerText = P.toFixed(1);
+    document.getElementById('mod-n').innerText = N.toFixed(1);
+    document.getElementById('mod-fat').innerText = fat.toFixed(1);
+    document.getElementById('mod-fr').innerText = (m * sim.a).toFixed(1);
     document.getElementById('acc-val').innerText = sim.a.toFixed(2);
     document.getElementById('vel-val').innerText = sim.v.toFixed(2);
 
