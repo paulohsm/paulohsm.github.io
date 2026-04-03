@@ -48,14 +48,13 @@
             position: relative;
         }
 
-        /* CONTAINER DO ANO: Ocupa 0px de altura para não criar buracos */
         .year-wrapper {
             position: relative;
             width: 100%;
             display: block;
         }
 
-        /* O RÓTULO: Sticky e Absoluto para flutuar sobre as semanas */
+        /* AJUSTE: O rótulo agora flutua sem ocupar espaço e alinhado ao topo do container */
         .year-sticky-label {
             position: sticky;
             top: 0;
@@ -71,8 +70,7 @@
             font-size: 0.9rem;
             border-right: 2px solid var(--grid-line);
             z-index: 100;
-            /* O SEGREDO: Ele flutua sem empurrar as linhas abaixo */
-            margin-bottom: calc(var(--cell-height) * -1); 
+            margin-bottom: calc(var(--cell-height) * -1); /* Flutuação sobre a primeira linha */
         }
 
         .week-row {
@@ -81,7 +79,6 @@
             height: var(--cell-height);
             border-bottom: 1px solid var(--grid-line);
             width: 100%;
-            background: transparent;
         }
 
         .cell {
@@ -140,7 +137,14 @@
             weekDate.setDate(pivotDate.getDate() + (offset * 7));
             const year = weekDate.getFullYear();
 
-            // Gerencia o wrapper do ano
+            // Identifica se esta semana contém o dia 1 de Janeiro
+            let isFirstWeekOfYear = false;
+            for(let i=0; i<7; i++) {
+                let d = new Date(weekDate);
+                d.setDate(weekDate.getDate() + i);
+                if(d.getDate() === 1 && d.getMonth() === 0) isFirstWeekOfYear = true;
+            }
+
             let yearWrap = document.getElementById(`yr-${year}`);
             if (!yearWrap) {
                 yearWrap = document.createElement('div');
@@ -158,11 +162,8 @@
 
             const row = document.createElement('div');
             row.className = 'week-row';
-
-            // Coluna do Ano (Sempre vazia, o label sticky flutua por cima)
             row.appendChild(document.createElement('div')).className = 'cell year-spacer';
 
-            // Coluna do Mês
             const monthCell = document.createElement('div');
             monthCell.className = 'cell month-col';
             for(let i=0; i<7; i++) {
@@ -172,7 +173,6 @@
             }
             row.appendChild(monthCell);
 
-            // Dias
             for(let i=0; i<7; i++) {
                 const day = new Date(weekDate);
                 day.setDate(weekDate.getDate() + i);
@@ -183,8 +183,13 @@
                 row.appendChild(cell);
             }
 
-            if (mode === 'append') yearWrap.appendChild(row);
-            else {
+            // CORREÇÃO DE POSICIONAMENTO:
+            // Se for a primeira semana do ano, ela deve ser a PRIMEIRA a entrar no wrap
+            // para que o Label (que tem margin-bottom negativa) fique exatamente sobre ela.
+            if (mode === 'append') {
+                yearWrap.appendChild(row);
+            } else {
+                // Ao rolar para cima, inserimos sempre após o label
                 const label = yearWrap.querySelector('.year-sticky-label');
                 yearWrap.insertBefore(row, label.nextSibling);
             }
