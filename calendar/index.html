@@ -11,7 +11,7 @@
             --text: #e0e0e0;
             --accent: #0366d6;
             --today-bg: rgba(3, 102, 214, 0.3);
-            --cell-height: 60px; 
+            --cell-height: 65px; 
         }
 
         * { box-sizing: border-box; }
@@ -20,12 +20,10 @@
         .app-container {
             max-width: 480px;
             margin: 0 auto;
-            height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             background: var(--bg);
-            border-left: 1px solid #222;
-            border-right: 1px solid #222;
             position: relative;
         }
 
@@ -35,7 +33,7 @@
             background: #151515;
             border-bottom: 2px solid var(--accent);
             text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: bold;
             padding: 10px 0;
             z-index: 1000;
@@ -44,32 +42,7 @@
         #calendar-viewport {
             flex: 1;
             overflow-y: auto;
-            position: relative;
-        }
-
-        /* O ANO AGORA É UM ELEMENTO FIXO NO TOPO DA COLUNA */
-        .sticky-year {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 60px;
-            height: 100%;
-            pointer-events: none; /* Não atrapalha o scroll */
-            z-index: 500;
-        }
-
-        #current-year-display {
-            position: sticky;
-            top: 0;
-            height: var(--cell-height);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg);
-            color: var(--accent);
-            font-weight: bold;
-            font-size: 0.9rem;
-            border-right: 2px solid var(--grid-line);
+            -webkit-overflow-scrolling: touch; /* Suaviza no iOS/Android */
         }
 
         .week-row {
@@ -87,19 +60,32 @@
             font-size: 1rem;
         }
 
+        /* COLUNA DO ANO COM STICKY NATIVO (SEM JAVASCRIPT NO SCROLL) */
+        .year-col {
+            position: sticky;
+            left: 0;
+            grid-column: 1;
+            background: var(--bg);
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-right: 2px solid var(--grid-line);
+            z-index: 10;
+        }
+
         .month-col { color: #888; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .weekend { background: #0d0d0d; }
         .today { background: var(--today-bg); box-shadow: inset 0 0 0 2px var(--accent); }
 
         .btn-today {
-            position: absolute; bottom: 30px; right: 30px;
+            position: absolute; bottom: 25px; right: 25px;
             background: var(--accent); color: white; border: none;
-            padding: 14px 22px; border-radius: 30px; font-weight: bold;
+            padding: 12px 20px; border-radius: 30px; font-weight: bold;
             box-shadow: 0 4px 15px rgba(0,0,0,0.6); z-index: 2000;
-            cursor: pointer; font-size: 0.8rem;
+            cursor: pointer;
         }
 
-        #top-sentinel, #bottom-sentinel { height: 1px; width: 100%; }
+        #top-sentinel, #bottom-sentinel { height: 2px; }
     </style>
 </head>
 <body>
@@ -110,10 +96,6 @@
         </div>
 
         <div id="calendar-viewport">
-            <div class="sticky-year">
-                <div id="current-year-display">2026</div>
-            </div>
-
             <div id="top-sentinel"></div>
             <div id="calendar-content"></div>
             <div id="bottom-sentinel"></div>
@@ -126,30 +108,42 @@
         const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
         const content = document.getElementById('calendar-content');
         const viewport = document.getElementById('calendar-viewport');
-        const yearDisplay = document.getElementById('current-year-display');
         
         const now = new Date();
         const pivotDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
         
         let topOffset = 0;
         let bottomOffset = 0;
+        let lastRenderedYear = null;
 
         function createWeek(offset, mode) {
             const weekDate = new Date(pivotDate);
             weekDate.setDate(pivotDate.getDate() + (offset * 7));
+            const year = weekDate.getFullYear();
             
             const row = document.createElement('div');
             row.className = 'week-row';
-            // Atribuímos o ano como um dado da linha para o observador ler
-            row.dataset.year = weekDate.getFullYear();
 
-            // 1. Coluna do Ano (Sempre vazia, o sticky cuidará disso)
-            const yearSpacer = document.createElement('div');
-            yearSpacer.className = 'cell';
-            yearSpacer.style.borderRight = '2px solid var(--grid-line)';
-            row.appendChild(yearSpacer);
+            // Coluna do Ano: Só preenche o texto se for a primeira semana do ano ou a primeira renderizada
+            const yearCell = document.createElement('div');
+            yearCell.className = 'cell year-col';
+            
+            // Lógica: Se o dia 1 de Jan está nesta semana, mostramos o ano
+            let hasFirstDay = false;
+            for(let i=0; i<7; i++){
+                let d = new Date(weekDate);
+                d.setDate(weekDate.getDate() + i);
+                if(d.getFullYear() !== yearCell._y) yearCell._y = d.getFullYear(); // auxiliar
+                if(d.getDate() === 1 && d.getMonth() === 0) hasFirstDay = true;
+            }
 
-            // 2. Coluna do Mês
+            // Exibe o ano se for a virada ou se for a semana do "Hoje" na carga inicial
+            if (hasFirstDay || offset === 0) {
+                yearCell.innerText = year;
+            }
+            row.appendChild(yearCell);
+
+            // Coluna do Mês
             const monthCell = document.createElement('div');
             monthCell.className = 'cell month-col';
             for(let i=0; i<7; i++) {
@@ -159,7 +153,7 @@
             }
             row.appendChild(monthCell);
 
-            // 3. Dias
+            // Dias
             for(let i=0; i<7; i++) {
                 const day = new Date(weekDate);
                 day.setDate(weekDate.getDate() + i);
@@ -173,19 +167,6 @@
             if (mode === 'append') content.appendChild(row);
             else content.insertBefore(row, content.firstChild);
         }
-
-        // FUNÇÃO PARA ATUALIZAR O ANO BASEADO NA ROLAGEM
-        viewport.addEventListener('scroll', () => {
-            const rows = document.querySelectorAll('.week-row');
-            // Pegamos a linha que está logo abaixo do header
-            for (let row of rows) {
-                const rect = row.getBoundingClientRect();
-                if (rect.top >= 0 && rect.top < 150) {
-                    yearDisplay.innerText = row.dataset.year;
-                    break;
-                }
-            }
-        });
 
         function load(dir) {
             const hPre = content.offsetHeight;
@@ -202,8 +183,7 @@
             topOffset = 0; bottomOffset = 0;
             createWeek(0, 'append');
             for(let i=0; i<15; i++) load('down');
-            const target = document.querySelector('.today');
-            if(target) target.scrollIntoView({block:'center'});
+            document.querySelector('.today').scrollIntoView({block:'center'});
         }
 
         const obs = new IntersectionObserver(entries => {
@@ -213,16 +193,16 @@
                     if(e.target.id === 'top-sentinel') load('up');
                 }
             });
-        }, { root: viewport, rootMargin: '600px' });
+        }, { root: viewport, rootMargin: '800px' });
 
         obs.observe(document.getElementById('top-sentinel'));
         obs.observe(document.getElementById('bottom-sentinel'));
 
+        // Start
         createWeek(0, 'append');
         for(let i=0; i<20; i++) load('down');
         setTimeout(() => {
-            const todayCell = document.querySelector('.today');
-            if(todayCell) todayCell.scrollIntoView({block:'center'});
+            document.querySelector('.today').scrollIntoView({block:'center'});
         }, 100);
     </script>
 </body>
