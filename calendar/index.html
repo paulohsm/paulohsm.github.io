@@ -132,28 +132,32 @@
         let topOffset = 0;
         let bottomOffset = 0;
 
-        function createWeek(offset, mode) {
+function createWeek(offset, mode) {
             const weekDate = new Date(pivotDate);
             weekDate.setDate(pivotDate.getDate() + (offset * 7));
-            const year = weekDate.getFullYear();
-
-            // Identifica se esta semana contém o dia 1 de Janeiro
-            let isFirstWeekOfYear = false;
-            for(let i=0; i<7; i++) {
+            
+            // DESCUBRIR O ANO REAL DESTA SEMANA:
+            // Se a semana contém o dia 1º de Janeiro, o rótulo do Ano deve ser o novo ano.
+            // Caso contrário, usamos o ano do domingo.
+            let yearForThisWeek = weekDate.getFullYear();
+            for (let i = 0; i < 7; i++) {
                 let d = new Date(weekDate);
                 d.setDate(weekDate.getDate() + i);
-                if(d.getDate() === 1 && d.getMonth() === 0) isFirstWeekOfYear = true;
+                if (d.getDate() === 1 && d.getMonth() === 0) {
+                    yearForThisWeek = d.getFullYear();
+                    break;
+                }
             }
 
-            let yearWrap = document.getElementById(`yr-${year}`);
+            let yearWrap = document.getElementById(`yr-${yearForThisWeek}`);
             if (!yearWrap) {
                 yearWrap = document.createElement('div');
-                yearWrap.id = `yr-${year}`;
+                yearWrap.id = `yr-${yearForThisWeek}`;
                 yearWrap.className = 'year-wrapper';
                 
                 const label = document.createElement('div');
                 label.className = 'year-sticky-label';
-                label.innerText = year;
+                label.innerText = yearForThisWeek;
                 yearWrap.appendChild(label);
 
                 if (mode === 'append') content.appendChild(yearWrap);
@@ -183,18 +187,14 @@
                 row.appendChild(cell);
             }
 
-            // CORREÇÃO DE POSICIONAMENTO:
-            // Se for a primeira semana do ano, ela deve ser a PRIMEIRA a entrar no wrap
-            // para que o Label (que tem margin-bottom negativa) fique exatamente sobre ela.
             if (mode === 'append') {
                 yearWrap.appendChild(row);
             } else {
-                // Ao rolar para cima, inserimos sempre após o label
                 const label = yearWrap.querySelector('.year-sticky-label');
                 yearWrap.insertBefore(row, label.nextSibling);
             }
         }
-
+        
         function load(dir) {
             const hPre = content.offsetHeight;
             const sPre = viewport.scrollTop;
