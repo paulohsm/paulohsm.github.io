@@ -48,13 +48,15 @@
             position: relative;
         }
 
-        /* O SEGREDO DO EFEITO DE EMPURRAR */
-        .year-group {
-            display: block;
+        /* CONTAINER DO ANO: Ocupa 0px de altura para não criar buracos */
+        .year-wrapper {
             position: relative;
+            width: 100%;
+            display: block;
         }
 
-        .year-label {
+        /* O RÓTULO: Sticky e Absoluto para flutuar sobre as semanas */
+        .year-sticky-label {
             position: sticky;
             top: 0;
             left: 0;
@@ -68,8 +70,9 @@
             font-weight: bold;
             font-size: 0.9rem;
             border-right: 2px solid var(--grid-line);
-            z-index: 10;
-            float: left; /* Permite que as semanas fiquem ao lado sem quebrar a linha */
+            z-index: 100;
+            /* O SEGREDO: Ele flutua sem empurrar as linhas abaixo */
+            margin-bottom: calc(var(--cell-height) * -1); 
         }
 
         .week-row {
@@ -78,6 +81,7 @@
             height: var(--cell-height);
             border-bottom: 1px solid var(--grid-line);
             width: 100%;
+            background: transparent;
         }
 
         .cell {
@@ -88,9 +92,7 @@
             font-size: 1rem;
         }
 
-        /* Espaçador para compensar o float do Year Label */
-        .year-spacer { grid-column: 1; }
-
+        .year-spacer { border-right: 2px solid var(--grid-line); }
         .month-col { color: #888; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .weekend { background: #0d0d0d; }
         .today { background: var(--today-bg); box-shadow: inset 0 0 0 2px var(--accent); }
@@ -104,9 +106,6 @@
         }
 
         #top-sentinel, #bottom-sentinel { height: 2px; width: 100%; }
-        
-        /* Limpeza de floats para evitar as linhas brancas */
-        .year-group::after { content: ""; display: table; clear: both; }
     </style>
 </head>
 <body>
@@ -141,29 +140,29 @@
             weekDate.setDate(pivotDate.getDate() + (offset * 7));
             const year = weekDate.getFullYear();
 
-            // Gerencia o container do ano (Year Group)
-            let yearGroup = document.getElementById(`year-g-${year}`);
-            if (!yearGroup) {
-                yearGroup = document.createElement('div');
-                yearGroup.id = `year-g-${year}`;
-                yearGroup.className = 'year-group';
+            // Gerencia o wrapper do ano
+            let yearWrap = document.getElementById(`yr-${year}`);
+            if (!yearWrap) {
+                yearWrap = document.createElement('div');
+                yearWrap.id = `yr-${year}`;
+                yearWrap.className = 'year-wrapper';
                 
                 const label = document.createElement('div');
-                label.className = 'year-label';
+                label.className = 'year-sticky-label';
                 label.innerText = year;
-                yearGroup.appendChild(label);
+                yearWrap.appendChild(label);
 
-                if (mode === 'append') content.appendChild(yearGroup);
-                else content.insertBefore(yearGroup, content.firstChild);
+                if (mode === 'append') content.appendChild(yearWrap);
+                else content.insertBefore(yearWrap, content.firstChild);
             }
 
             const row = document.createElement('div');
             row.className = 'week-row';
 
-            // 1. Célula do Ano (Vazia para o label flutuante ocupar)
+            // Coluna do Ano (Sempre vazia, o label sticky flutua por cima)
             row.appendChild(document.createElement('div')).className = 'cell year-spacer';
 
-            // 2. Célula do Mês
+            // Coluna do Mês
             const monthCell = document.createElement('div');
             monthCell.className = 'cell month-col';
             for(let i=0; i<7; i++) {
@@ -173,7 +172,7 @@
             }
             row.appendChild(monthCell);
 
-            // 3. Células dos Dias
+            // Dias
             for(let i=0; i<7; i++) {
                 const day = new Date(weekDate);
                 day.setDate(weekDate.getDate() + i);
@@ -184,12 +183,10 @@
                 row.appendChild(cell);
             }
 
-            if (mode === 'append') {
-                yearGroup.appendChild(row);
-            } else {
-                // Ao inserir no topo, precisamos colocar após o label
-                const label = yearGroup.querySelector('.year-label');
-                yearGroup.insertBefore(row, label.nextSibling);
+            if (mode === 'append') yearWrap.appendChild(row);
+            else {
+                const label = yearWrap.querySelector('.year-sticky-label');
+                yearWrap.insertBefore(row, label.nextSibling);
             }
         }
 
@@ -208,10 +205,8 @@
             topOffset = 0; bottomOffset = 0;
             createWeek(0, 'append');
             for(let i=0; i<20; i++) load('down');
-            setTimeout(() => {
-                const todayCell = document.querySelector('.today');
-                if(todayCell) todayCell.scrollIntoView({block:'center', behavior: 'smooth'});
-            }, 50);
+            const target = document.querySelector('.today');
+            if(target) target.scrollIntoView({block:'center', behavior: 'smooth'});
         }
 
         const observer = new IntersectionObserver(entries => {
@@ -226,12 +221,11 @@
         observer.observe(document.getElementById('top-sentinel'));
         observer.observe(document.getElementById('bottom-sentinel'));
 
-        // Inicialização
         createWeek(0, 'append');
         for(let i=0; i<25; i++) load('down');
         setTimeout(() => {
-            const todayCell = document.querySelector('.today');
-            if(todayCell) todayCell.scrollIntoView({block:'center'});
+            const today = document.querySelector('.today');
+            if(today) today.scrollIntoView({block:'center'});
         }, 100);
     </script>
 </body>
