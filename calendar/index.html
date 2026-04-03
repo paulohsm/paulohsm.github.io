@@ -25,6 +25,8 @@
             flex-direction: column;
             background: var(--bg);
             position: relative;
+            border-left: 1px solid #222;
+            border-right: 1px solid #222;
         }
 
         .header-days {
@@ -36,13 +38,33 @@
             font-size: 0.65rem;
             font-weight: bold;
             padding: 10px 0;
-            z-index: 1000;
+            z-index: 2000;
+        }
+
+        /* O ANO FIXO NO TOPO */
+        .year-overlay {
+            position: absolute;
+            top: 36px; /* Altura do header-days */
+            left: 0;
+            width: 60px;
+            height: var(--cell-height);
+            background: var(--bg);
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 2px solid var(--grid-line);
+            border-bottom: 1px solid var(--grid-line);
+            z-index: 1500;
+            pointer-events: none;
         }
 
         #calendar-viewport {
             flex: 1;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* Suaviza no iOS/Android */
+            -webkit-overflow-scrolling: touch;
         }
 
         .week-row {
@@ -60,18 +82,8 @@
             font-size: 1rem;
         }
 
-        /* COLUNA DO ANO COM STICKY NATIVO (SEM JAVASCRIPT NO SCROLL) */
-        .year-col {
-            position: sticky;
-            left: 0;
-            grid-column: 1;
-            background: var(--bg);
-            color: var(--accent);
-            font-weight: bold;
-            font-size: 0.9rem;
-            border-right: 2px solid var(--grid-line);
-            z-index: 10;
-        }
+        /* Coluna do ano vazia nas linhas, o overlay cobre o topo */
+        .year-spacer { border-right: 2px solid var(--grid-line); }
 
         .month-col { color: #888; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .weekend { background: #0d0d0d; }
@@ -95,6 +107,8 @@
             <div>ANO</div><div>MÊS</div><div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div>
         </div>
 
+        <div class="year-overlay" id="fixed-year-label">2026</div>
+
         <div id="calendar-viewport">
             <div id="top-sentinel"></div>
             <div id="calendar-content"></div>
@@ -108,42 +122,29 @@
         const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
         const content = document.getElementById('calendar-content');
         const viewport = document.getElementById('calendar-viewport');
+        const yearLabel = document.getElementById('fixed-year-label');
         
         const now = new Date();
         const pivotDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
         
         let topOffset = 0;
         let bottomOffset = 0;
-        let lastRenderedYear = null;
 
         function createWeek(offset, mode) {
             const weekDate = new Date(pivotDate);
             weekDate.setDate(pivotDate.getDate() + (offset * 7));
-            const year = weekDate.getFullYear();
             
             const row = document.createElement('div');
             row.className = 'week-row';
+            // Guardamos o ano de referência do domingo desta semana
+            row.dataset.year = weekDate.getFullYear();
 
-            // Coluna do Ano: Só preenche o texto se for a primeira semana do ano ou a primeira renderizada
-            const yearCell = document.createElement('div');
-            yearCell.className = 'cell year-col';
-            
-            // Lógica: Se o dia 1 de Jan está nesta semana, mostramos o ano
-            let hasFirstDay = false;
-            for(let i=0; i<7; i++){
-                let d = new Date(weekDate);
-                d.setDate(weekDate.getDate() + i);
-                if(d.getFullYear() !== yearCell._y) yearCell._y = d.getFullYear(); // auxiliar
-                if(d.getDate() === 1 && d.getMonth() === 0) hasFirstDay = true;
-            }
+            // 1. Coluna Ano (Vazia)
+            const yearSpacer = document.createElement('div');
+            yearSpacer.className = 'cell year-spacer';
+            row.appendChild(yearSpacer);
 
-            // Exibe o ano se for a virada ou se for a semana do "Hoje" na carga inicial
-            if (hasFirstDay || offset === 0) {
-                yearCell.innerText = year;
-            }
-            row.appendChild(yearCell);
-
-            // Coluna do Mês
+            // 2. Coluna Mês
             const monthCell = document.createElement('div');
             monthCell.className = 'cell month-col';
             for(let i=0; i<7; i++) {
@@ -153,7 +154,7 @@
             }
             row.appendChild(monthCell);
 
-            // Dias
+            // 3. Dias
             for(let i=0; i<7; i++) {
                 const day = new Date(weekDate);
                 day.setDate(weekDate.getDate() + i);
@@ -167,6 +168,22 @@
             if (mode === 'append') content.appendChild(row);
             else content.insertBefore(row, content.firstChild);
         }
+
+        // ATUALIZAÇÃO DO ANO: Otimizada para não travar
+        viewport.addEventListener('scroll', () => {
+            // Pegamos a primeira linha visível
+            // Como as linhas têm altura fixa de 65px, podemos estimar a linha atual
+            const scrollTop = viewport.scrollTop;
+            const index = Math.floor(scrollTop / 65);
+            const rows = content.getElementsByClassName('week-row');
+            
+            if (rows[index]) {
+                const yearInView = rows[index].dataset.year;
+                if (yearLabel.innerText !== yearInView) {
+                    yearLabel.innerText = yearInView;
+                }
+            }
+        });
 
         function load(dir) {
             const hPre = content.offsetHeight;
@@ -182,8 +199,9 @@
             content.innerHTML = "";
             topOffset = 0; bottomOffset = 0;
             createWeek(0, 'append');
-            for(let i=0; i<15; i++) load('down');
-            document.querySelector('.today').scrollIntoView({block:'center'});
+            for(let i=0; i<20; i++) load('down');
+            const todayCell = document.querySelector('.today');
+            if(todayCell) todayCell.scrollIntoView({block:'center'});
         }
 
         const obs = new IntersectionObserver(entries => {
@@ -198,11 +216,12 @@
         obs.observe(document.getElementById('top-sentinel'));
         obs.observe(document.getElementById('bottom-sentinel'));
 
-        // Start
+        // Init
         createWeek(0, 'append');
         for(let i=0; i<20; i++) load('down');
         setTimeout(() => {
-            document.querySelector('.today').scrollIntoView({block:'center'});
+            const today = document.querySelector('.today');
+            if(today) today.scrollIntoView({block:'center'});
         }, 100);
     </script>
 </body>
