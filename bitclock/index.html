@@ -6,19 +6,88 @@
     <title>BitClock | Tempo Binário</title>
     <style>
         :root { --bg: #0a0a0a; --accent: #0366d6; --text: #e0e0e0; --card: #161616; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* Área do Relógio */
-        .clock-container { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%; padding: 20px; }
-        .clock-display { display: flex; gap: 15px; font-family: 'Consolas', monospace; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-        .time-unit { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #333; min-width: 100px; }
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+        }
+        
+        .clock-container { 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            width: 100%; 
+            padding: 10px; 
+        }
+
+        .ciclo-label { 
+            font-size: 1.2rem; 
+            color: #fff; 
+            margin-bottom: 2rem; 
+            opacity: 0.8; 
+        }
+
+        /* Container dos blocos - Força linha única e sem quebras */
+        .clock-display { 
+            display: flex; 
+            gap: 15px; 
+            font-family: 'Consolas', monospace; 
+            flex-wrap: nowrap; /* Impede a quebra de linha */
+            justify-content: center; 
+            align-items: center;
+            width: 100%;
+        }
+
+        .time-unit { 
+            background: var(--card); 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+            flex: 1; /* Faz os blocos dividirem o espaço igualmente */
+            max-width: 150px;
+            min-width: 70px;
+        }
+
         .unit-value { font-size: 3rem; font-weight: bold; color: var(--accent); display: block; }
-        .unit-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 2px; }
+        .unit-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Lógica de Orientação */
         
-        .ciclo-label { font-size: 1.2rem; color: #fff; margin-bottom: 30px; opacity: 0.8; }
-        .scroll-hint { margin-top: 50px; color: #555; animation: bounce 2s infinite; font-size: 0.9rem; }
+        /* RETRATO (Vertical) */
+        @media (orientation: portrait) {
+            .clock-display {
+                flex-direction: column; /* Força os blocos um em cima do outro */
+            }
+            .time-unit {
+                width: 80%; /* Ocupa a maior parte da largura */
+                max-width: 250px;
+            }
+            .unit-value { font-size: 3.5rem; }
+        }
+
+        /* PAISAGEM (Horizontal) */
+        @media (orientation: landscape) {
+            .clock-display {
+                flex-direction: row; /* Força os blocos lado a lado */
+            }
+            /* Ajuste para telas pequenas em paisagem para não cortar o conteúdo */
+            .unit-value { font-size: 2.5rem; }
+            .time-unit { padding: 10px; }
+        }
+
+        .scroll-hint { margin-top: 3rem; color: #555; animation: bounce 2s infinite; font-size: 0.9rem; }
         
-        /* Área de Explicação (Rolagem) */
         .info-section { max-width: 700px; padding: 60px 20px; line-height: 1.6; border-top: 1px solid #333; }
         h2 { color: var(--accent); border-bottom: 1px solid #333; padding-bottom: 10px; }
         table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9rem; }
@@ -26,7 +95,6 @@
         th { color: var(--accent); text-transform: uppercase; }
 
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
-        @media (max-width: 600px) { .unit-value { font-size: 2rem; } .time-unit { min-width: 80px; padding: 10px; } }
     </style>
 </head>
 <body>
@@ -83,36 +151,30 @@
     <script>
         function updateBitClock() {
             const now = new Date();
-            
-            // Segundos passados desde a meia-noite
             const secondsPassed = (now.getHours() * 3600) + 
                                   (now.getMinutes() * 60) + 
                                   now.getSeconds() + 
                                   (now.getMilliseconds() / 1000);
 
-            // Conversão para a escala de 131.072 bits por dia
             const totalBitsInDay = 131072;
             const currentTotalBits = (secondsPassed / 86400) * totalBitsInDay;
 
-            // Decomposição das unidades
             let remaining = Math.floor(currentTotalBits);
 
-            const turno = Math.floor(remaining / 32768); // 131072 / 4
+            const turno = Math.floor(remaining / 32768); 
             remaining %= 32768;
 
-            const bloco = Math.floor(remaining / 4096);  // 32768 / 8
+            const bloco = Math.floor(remaining / 4096);  
             remaining %= 4096;
 
-            const fluxo = Math.floor(remaining / 64);    // 4096 / 64
-            const bit = remaining % 64;                  // Restante
+            const fluxo = Math.floor(remaining / 64);    
+            const bit = remaining % 64;                  
 
-            // Atualização do DOM
             document.getElementById('turno').innerText = turno;
             document.getElementById('bloco').innerText = bloco;
             document.getElementById('fluxo').innerText = fluxo;
             document.getElementById('bit').innerText = bit.toString().padStart(2, '0');
             
-            // Data do Ciclo (Exemplo: Ciclo 03 Abr 2026)
             const options = { day: '2-digit', month: 'short', year: 'numeric' };
             document.getElementById('data-label').innerText = `Ciclo: ${now.toLocaleDateString('pt-BR', options)}`;
 
